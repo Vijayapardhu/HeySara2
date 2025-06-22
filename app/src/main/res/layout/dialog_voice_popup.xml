@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/voice_popup_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:gravity="center">
+
+    <!-- Animated scaling circle with bars inside -->
+    <FrameLayout
+        android:id="@+id/voice_circle_container"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        android:padding="16dp">
+
+        <View
+            android:id="@+id/voice_circle_bg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_voice_circle"
+            android:elevation="8dp"/>
+
+        <com.mvp.sara.VoiceBarsView
+            android:id="@+id/voice_bars"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"/>
+    </FrameLayout>
+
+</FrameLayout> 
