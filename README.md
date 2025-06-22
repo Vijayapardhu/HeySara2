@@ -1,57 +1,67 @@
-<<<<<<< HEAD
-# HeySara
-Powerful Voice Assistant
-=======
-# Sara Voice Assistant
+# Hey Sara: Your Intelligent Voice Assistant
 
-A voice-controlled Android assistant that responds to "Hey Sara" and can perform various device operations.
+**Hey Sara** is a powerful and intuitive voice assistant for Android, designed to streamline your daily tasks with seamless voice commands. From managing calls and messages to controlling your device settings and even performing conversational searches, Sara is built to be your all-in-one personal assistant.
 
-## New Feature: Media Interruption Control
+---
 
-Sara now properly manages audio focus to prevent unwanted interruption of media playback. You can control whether Sara should interrupt your music, videos, or other media.
+## Key Features
 
-### Voice Commands for Media Settings
+-   **Voice-Activated Control**: Wake up Sara with a simple "Hey Sara" hotword and give your command.
+-   **Conversational AI Search**: Ask complex questions and get answers directly from the Gemini API.
+-   **Full Communication Suite**: Make calls, send SMS, and message on WhatsApp, all hands-free.
+-   **Device Control**: Adjust brightness, volume, and toggle settings like Airplane Mode and Flashlight.
+-   **Productivity Tools**: Set alarms, create notes, and get reminders without lifting a finger.
+-   **Accessibility Integration**: Interact with apps by voice, from liking a post to switching your camera.
+-   **Smart Call Handling**: Sara announces incoming calls, and you can answer or reject them by voice.
+-   **Secure Payments**: Initiate UPI payments securely by launching your favorite payment app with all details pre-filled.
 
-- **"Sara settings"** or **"Voice settings"** - Check current media interruption settings
-- **"Allow media interruption"** - Enable Sara to interrupt media playback when listening
-- **"Disable media interruption"** or **"Don't interrupt media"** - Prevent Sara from interrupting media playback
+---
 
-### How It Works
+## Voice Commands
 
-**Default Behavior (Recommended):**
-- Sara will NOT interrupt your media playback
-- When media is playing, Sara will tell you to pause it first before saying "Hey Sara"
-- This ensures uninterrupted music/video experience
+Here is a list of commands you can use with Sara:
 
-**Alternative Behavior:**
-- If you enable media interruption, Sara will pause your media when you say "Hey Sara"
-- This allows immediate voice commands even during media playback
+### Communication
+| Command                                      | Description                                                 |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| `call [contact name / number]`               | Places a direct call to the specified contact or number.    |
+| `send [contact / number] that [message]`     | Sends an SMS directly to the recipient.                     |
+| `whatsapp [contact / number] that [message]` | Opens WhatsApp, sends the message, and closes automatically.|
+| `answer / reject / no` (during a call)       | Answers or declines an incoming call.                       |
 
-### Technical Details
+### Productivity & Tools
+| Command                           | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| `search for [your query]`         | Performs a conversational search using the Gemini API. |
+| `set an alarm for [time]`         | Sets an alarm in the background without opening the app. |
+| `check my next alarm`             | Tells you when your next alarm is scheduled.           |
+| `delete an alarm`                 | Opens the alarm list for you to delete an alarm.       |
+| `open [app name]`                 | Launches the specified application.                    |
+| `take a photo`                    | Opens the camera app.                                  |
+| `switch camera`                   | Flips between the front and back camera.               |
+| `create a note that [your note]`  | Creates and saves a note on your device.               |
 
-The app now uses Android's AudioFocus system to:
-- Properly request audio focus before speech recognition
-- Respect other apps' audio playback
-- Provide user control over interruption behavior
-- Use appropriate audio focus levels based on user preferences
+### Device Control
+| Command                          | Description                                             |
+| -------------------------------- | ------------------------------------------------------- |
+| `increase / decrease volume`     | Adjusts the device's media volume.                      |
+| `set brightness to [0-100] %`    | Sets the screen brightness to a specific level.         |
+| `max brightness`                 | Sets the screen brightness to 100%.                     |
+| `turn on / off flashlight`       | Toggles the device's flashlight.                        |
+| `turn on / off airplane mode`    | Toggles airplane mode.                                  |
+| `turn on / off bluetooth`        | Toggles Bluetooth.                                      |
 
-### Usage Tips
+### Payments (Secure)
+| Command                                 | Description                                                         |
+| --------------------------------------- | ------------------------------------------------------------------- |
+| `pay [amount] to [contact] using [app]` | Opens your UPI app (GPay, PhonePe, etc.) with payment details filled. |
+| `scan and pay`                          | Opens your default UPI app's QR code scanner.                       |
 
-1. **For uninterrupted media experience:** Keep media interruption disabled (default)
-2. **For immediate voice access:** Enable media interruption
-3. **When media is playing:** Either pause it first, or enable interruption in settings
-4. **Check current settings:** Say "Sara settings" to see your current preference
+---
 
-### Other Voice Commands
+## How to Set Up Payments
+To use the payment feature, you must store your contact's UPI ID (e.g., `example@upi`) in the **"Notes"** field of their contact card in your phone's Contacts app. Sara will use this to securely initiate the payment.
 
-Sara supports many other commands including:
-- Volume control
-- Brightness adjustment
-- Flashlight toggle
-- App launching
-- SMS sending
-- And many more!
+---
 
-Say "Hey Sara" followed by your command to get started. 
->>>>>>> a2b1706 (Initial commit)
-"# HeySara2" 
+This project demonstrates the power of modern voice AI and its potential to simplify our interaction with technology. 
