@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:background="@drawable/bg_gradient_orange_white"
+        android:padding="0dp">
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Picovoice Wake Word Setup"
+            android:textColor="#FFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginTop="62dp"
+            android:layout_marginBottom="8dp"
+            android:layout_gravity="center_horizontal" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="340dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="10dp"
+            app:cardBackgroundColor="#66FFF8F2">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFF8F2"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Picovoice Access Key"
+                    android:textColor="#FF9800"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+                <EditText
+                    android:id="@+id/edit_access_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter your Picovoice Access Key..."
+                    android:background="@android:color/white"
+                    android:textColor="#333"
+                    android:textColorHint="#888"
+                    android:padding="12dp"
+                    android:minHeight="48dp"
+                    android:gravity="start"
+                    android:inputType="text"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btn_get_access_key"
+            android:layout_width="340dp"
+            android:layout_height="48dp"
+            android:text="Get Access Key"
+            android:backgroundTint="#FF9800"
+            android:textColor="#FFF"
+            android:background="@drawable/orange_rounded_button"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:elevation="4dp"/>
+
+        <TextView
+            android:id="@+id/link_setup_guide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="See setup guide"
+            android:textColor="#1976D2"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:autoLink="web"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:padding="4dp"/>
+
+        <LinearLayout
+            android:id="@+id/commands_list_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btn_save_picovoice"
+            android:layout_width="340dp"
+            android:layout_height="48dp"
+            android:text="Save &amp; Continue"
+            android:backgroundTint="#FFA726"
+            android:textColor="#FFF"
+            android:background="@drawable/orange_rounded_button"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
+            android:elevation="4dp"/>
+
+        <Button
+            android:id="@+id/btn_enable_device_admin"
+            android:layout_width="340dp"
+            android:layout_height="48dp"
+            android:text="Enable Device Admin"
+            android:backgroundTint="#FFA726"
+            android:textColor="#FFF"
+            android:background="@drawable/orange_rounded_button"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp"/>
+
+        <EditText
+            android:id="@+id/edit_update_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter update APK URL (admin only)"
+            android:background="@android:color/white"
+            android:textColor="#333"
+            android:textColorHint="#888"
+            android:padding="12dp"
+            android:minHeight="48dp"
+            android:gravity="start"
+            android:inputType="textUri"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"/>
+        <Button
+            android:id="@+id/btn_save_update_url"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Save Update URL"
+            android:backgroundTint="#FFA726"
+            android:textColor="#FFF"
+            android:background="@drawable/orange_rounded_button"
+            android:elevation="4dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"/>
+        <EditText
+            android:id="@+id/edit_update_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter latest version code (admin only)"
+            android:background="@android:color/white"
+            android:textColor="#333"
+            android:textColorHint="#888"
+            android:padding="12dp"
+            android:minHeight="48dp"
+            android:gravity="start"
+            android:inputType="number"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"/>
+    </LinearLayout>
+</ScrollView> 
+ 
+ 
+ 

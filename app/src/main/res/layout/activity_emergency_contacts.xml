@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:background="@drawable/bg_gradient_orange_white"
+        android:padding="0dp">
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Emergency Contacts"
+            android:textColor="#FFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginTop="62dp"
+            android:layout_marginBottom="8dp"
+            android:layout_gravity="center_horizontal" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="340dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="10dp"
+            app:cardBackgroundColor="#66FFF8F2">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFF8F2"
+                android:padding="16dp">
+                <ListView
+                    android:id="@+id/list_contacts"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:divider="#FF9800"
+                    android:dividerHeight="1dp"
+                    android:background="@android:color/transparent"
+                    android:choiceMode="singleChoice" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Emergency message customization section -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="340dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="10dp"
+            app:cardBackgroundColor="#66FFF8F2">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFF8F2"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Emergency Message"
+                    android:textColor="#FF9800"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+                <EditText
+                    android:id="@+id/edit_emergency_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter your emergency message..."
+                    android:background="@android:color/white"
+                    android:textColor="#333"
+                    android:textColorHint="#888"
+                    android:padding="12dp"
+                    android:minHeight="60dp"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine"
+                    android:maxLines="4"
+                    android:layout_marginBottom="8dp"/>
+                <Button
+                    android:id="@+id/btn_save_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Save Message"
+                    android:backgroundTint="#FFA726"
+                    android:textColor="#FFF"
+                    android:background="@drawable/orange_rounded_button"
+                    android:elevation="4dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp">
+            <Button
+                android:id="@+id/btn_add_contact"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Add Contact"
+                android:backgroundTint="@color/orange"
+                android:textColor="#FFF"
+                android:background="@drawable/orange_rounded_button"
+                android:layout_marginLeft="40dp"
+                android:layout_marginRight="5dp"
+                android:elevation="4dp" />
+            <Button
+                android:id="@+id/btn_edit_contact"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Edit"
+                android:backgroundTint="#FFA726"
+                android:textColor="#FFF"
+                android:background="@drawable/orange_rounded_button"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="5dp"
+                android:elevation="4dp" />
+            <Button
+                android:id="@+id/btn_remove_contact"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Remove"
+                android:backgroundTint="#E53935"
+                android:textColor="#FFF"
+                android:background="@drawable/orange_rounded_button"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="40dp"
+                android:elevation="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView> 

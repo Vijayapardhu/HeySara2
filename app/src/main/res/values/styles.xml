@@ -1,0 +1,21 @@
+<resources>
+    <style name="PinDot">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:background">@drawable/pin_dot_bg</item>
+    </style>
+    <style name="KeypadButton">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">100dp</item>
+        <item name="android:background">@drawable/keypad_button_bg</item>
+        <item name="android:textColor">#FFF</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:layout_margin">12dp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+    <style name="KeypadButtonSpecial" parent="KeypadButton">
+        <item name="android:background">@drawable/keypad_button_special_bg</item>
+        <item name="android:textColor">#FFA726</item>
+    </style>
+    <!-- other styles here -->
+</resources> 

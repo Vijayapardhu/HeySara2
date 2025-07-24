@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "534311598668",
+    "firebase_url": "https://cmee-2201b-default-rtdb.firebaseio.com",
+    "project_id": "cmee-2201b",
+    "storage_bucket": "cmee-2201b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:534311598668:android:ae6c33d45ffd9e0e7652e9",
+        "android_client_info": {
+          "package_name": "com.mvp.sarah"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "534311598668-k6n0fhe8qk3bk022ecfgfjb5sv8dm833.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm_biqQshrJXZdI6f88t3W_GWFuixxN-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "534311598668-k6n0fhe8qk3bk022ecfgfjb5sv8dm833.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "534311598668-sjhim1v8vjrnh8uf68uf5rchh99j9igf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.devOps"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/text_emergency_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Slide to stop emergency mode"
+        android:textSize="20sp"
+        android:textColor="#D32F2F"
+        android:layout_marginBottom="32dp"
+        android:gravity="center" />
+
+    <SeekBar
+        android:id="@+id/slider_stop"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0"
+        android:layout_gravity="center_horizontal" />
+
+</LinearLayout> 

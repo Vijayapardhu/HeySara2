@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_orange_white">
+    <LinearLayout
+        android:id="@+id/root_layout"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Manage App Lock"
+            android:textColor="#FFF"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="Apps"
+            android:textColor="#FF9800"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginBottom="8dp"
+            android:background="#FF9800" />
+
+        <EditText
+            android:id="@+id/edit_search"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="Search apps..."
+            android:background="@android:color/white"
+            android:textColor="#333"
+            android:textColorHint="#888"
+            android:padding="12dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:inputType="text"/>
+
+        <!-- All Apps Section -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_all_apps"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/rounded_white_card"
+            android:padding="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+        <TextView
+            android:id="@+id/empty_all_apps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No apps found."
+            android:textColor="#888"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:visibility="gone"/>
+
+        <!-- Change Password -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_change_password"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Change App Lock Password"
+            android:backgroundTint="#FFA726"
+            android:textColor="#FFF"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.Button"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="center_horizontal"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:backgroundTint="#FFF">
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_lock"
+                        android:tint="#FFA726"
+                        android:contentDescription="Lock icon"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="App Lock Secret Key / PIN"
+                        android:textStyle="bold"
+                        android:textColor="#333"
+                        android:textSize="18sp"
+                        android:layout_marginStart="12dp"/>
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/edit_pin"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:hint="Enter or change your secret key or PIN"
+                    android:inputType="textPassword"
+                    android:background="@drawable/rounded_white_card"
+                    android:textColor="#333"
+                    android:textColorHint="#888"
+                    android:padding="12dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_save_pin"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Save Secret Key / PIN"
+                    android:backgroundTint="#FFA726"
+                    android:textColor="#FFF"
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Lock Duration -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lock Duration (minutes)"
+            android:textColor="#FF9800"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"/>
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_lock_duration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="1"
+            android:valueTo="30"
+            android:stepSize="1"
+            android:value="5"
+            app:labelBehavior="gone"
+            android:layout_marginBottom="16dp"/>
+        <TextView
+            android:id="@+id/label_lock_duration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5 minutes"
+            android:textColor="#FFA726"
+            android:textSize="16sp"
+            android:layout_marginBottom="32dp"
+            android:gravity="center"/>
+    </LinearLayout>
+</ScrollView> 

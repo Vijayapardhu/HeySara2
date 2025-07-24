@@ -1,0 +1,5 @@
+<resources>
+    <item name="transferRowIcon" type="id"/>
+    <item name="transferRowProgressBar" type="id"/>
+    <item name="transferRowStatus" type="id"/>
+</resources> 

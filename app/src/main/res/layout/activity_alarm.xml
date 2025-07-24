@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/alarm_background_gradient"
+    android:padding="24dp">
+
+    <!-- Current Time -->
+    <TextClock
+        android:id="@+id/current_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:format12Hour="h:mm"
+        android:format24Hour="HH:mm"
+        android:textColor="@color/alarm_text_primary"
+        android:textSize="120sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-thin"/>
+
+    <!-- Alarm Label -->
+    <TextView
+        android:id="@+id/alarm_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/current_time"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/alarm_text_secondary"
+        android:textSize="22sp"
+        android:fontFamily="sans-serif"/>
+
+    <!-- Buttons Container -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="64dp"
+        android:paddingHorizontal="32dp">
+
+        <!-- Snooze Button -->
+        <ImageButton
+            android:id="@+id/snooze_button"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentStart="true"
+            android:background="@drawable/bg_snooze_button"
+            android:src="@drawable/ic_snooze"
+            android:contentDescription="Snooze"
+            android:elevation="4dp"
+            android:scaleType="center"
+            android:stateListAnimator="@null"/>
+
+        <!-- Stop Button -->
+        <ImageButton
+            android:id="@+id/dismiss_button"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/bg_dismiss_button"
+            android:src="@drawable/ic_close"
+            android:contentDescription="Stop Alarm"
+            android:elevation="4dp"
+            android:scaleType="center"
+            android:stateListAnimator="@null"/>
+
+    </RelativeLayout>
+
+</RelativeLayout> 

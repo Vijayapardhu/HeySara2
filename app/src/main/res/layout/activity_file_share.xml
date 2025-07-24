@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:background="@drawable/bg_gradient_orange_white"
+        android:padding="0dp">
+
+        <!-- QR code card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="340dp"
+            android:layout_height="340dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="10dp"
+            app:cardBackgroundColor="#66FFF8F2">
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#FFF8F2">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/qr_orange_circle_bg" />
+                <ImageView
+                    android:id="@+id/qrImageView"
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="QR Code" />
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/deviceNameText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This device: "
+            android:textColor="#2196f3"
+            android:textSize="16sp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold" />
+
+        <!-- Voice wave bars -->
+        <com.mvp.sarah.VoiceBarsView
+            android:foreground="@color/orange"
+            android:id="@+id/voice_lines"
+            android:layout_width="wrap_content"
+            android:layout_height="100dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="32dp"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/qrProcedureText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1.Connect the sharing devices in the same network \n2. Scan the QR code on another device.\n3. Open the link.\n4. Download your file(s)."
+            android:textColor="#888"
+            android:textSize="15sp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"/>
+
+        <TextView
+            android:id="@+id/funFactText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fun fact: Sara keeps your transfers private!"
+            android:textColor="#FF9800"
+            android:textSize="15sp"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="0dp"
+            android:visibility="gone"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/fileListRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="-8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:overScrollMode="never"
+            android:clipToPadding="false"/>
+
+        <ProgressBar
+            android:id="@+id/serverLoadingSpinner"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/serverLoadingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Starting file server..."
+            android:textColor="#FF9800"
+            android:textSize="16sp"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Button row at the bottom -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp">
+            <Button
+                android:id="@+id/shareMoreButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Share More Files"
+                android:backgroundTint="@color/orange"
+                android:textColor="#FFF"
+                android:layout_marginLeft="40dp"
+                android:background="@drawable/orange_rounded_button"
+                android:layout_marginRight="5dp"
+                android:elevation="4dp" />
+            <Button
+                android:id="@+id/disconnectButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginRight="40dp"
+                android:text="Disconnect"
+                android:backgroundTint="#E53935"
+                android:textColor="#FFF"
+                android:background="@drawable/orange_rounded_button"
+                android:layout_marginLeft="8dp"
+                android:visibility="visible"
+                android:elevation="4dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView> 

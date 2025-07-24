@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/voice_overlay_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <!-- Blurred background (real blur set in code) -->
+    <View
+        android:id="@+id/blur_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#AA222222"/>
+
+    <!-- Centered assistant card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/assistant_card"
+        android:layout_width="320dp"
+        android:layout_height="360dp"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="16dp"
+        app:cardBackgroundColor="#F2FFFFFF">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Glowing animated ring -->
+            <ImageView
+                android:id="@+id/glow_ring"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_gravity="center"
+                android:src="@drawable/glow_ring"
+                android:scaleType="centerInside"
+                android:alpha="0.7"/>
+
+            <!-- Assistant icon or mic -->
+            <ImageView
+                android:id="@+id/assistant_icon"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_mic"
+                android:background="@drawable/white_circle"
+                android:elevation="8dp"/>
+
+            <!-- Animated voice bars -->
+            <com.mvp.sarah.VoiceBarsView
+                android:id="@+id/voice_bars"
+                android:layout_width="180dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal|bottom"
+                android:layout_marginBottom="64dp"/>
+
+            <!-- Listening text -->
+            <TextView
+                android:id="@+id/listening_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Listening…"
+                android:textColor="#222222"
+                android:textSize="22sp"
+                android:layout_gravity="center_horizontal|bottom"
+                android:layout_marginBottom="32dp"
+                android:alpha="0.85"/>
+
+            <!-- Close button -->
+            <ImageButton
+                android:id="@+id/btn_close_overlay"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|end"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_close"
+                android:tint="#222222"
+                android:contentDescription="Close"/>
+        </FrameLayout>
+    </androidx.cardview.widget.CardView>
+</FrameLayout> 
