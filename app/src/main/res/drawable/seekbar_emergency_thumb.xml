@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Shadow (smaller, more centered) -->
-    <item android:bottom="2dp" android:right="2dp">
+    <!-- Shadow -->
+    <item android:bottom="4dp" android:right="4dp">
         <shape android:shape="oval">
-            <size android:width="80dp" android:height="80dp"/>
+            <size android:width="96dp" android:height="96dp"/>
             <solid android:color="#22000000"/>
         </shape>
     </item>
-    <!-- Outer orange border -->
+    <!-- Main thumb -->
     <item>
         <shape android:shape="oval">
-            <size android:width="60dp" android:height="60dp"/>
-            <solid android:color="#FFFFFFFF"/>
-            <stroke android:width="5dp" android:color="#FF9800"/>
-        </shape>
-    </item>
-    <!-- Glossy highlight -->
-    <item>
-        <shape android:shape="oval">
-            <size android:width="60dp" android:height="28dp"/>
-            <gradient android:type="linear" android:angle="90"
-                android:startColor="#33FFFFFF" android:endColor="#00FFFFFF"/>
+            <size android:width="80dp" android:height="80dp"/>
+            <solid android:color="@color/alarm_button_dismiss"/>
+            <stroke android:width="8dp" android:color="@color/white"/>
         </shape>
     </item>
 </layer-list> 

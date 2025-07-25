@@ -1,6 +1,6 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android' version '1.9.22'
+    id 'org.jetbrains.kotlin.android' version '2.1.0' // or latest stable
     id 'com.google.gms.google-services'
 }
 
@@ -87,5 +87,5 @@ dependencies {
     implementation 'io.grpc:grpc-android:1.73.0'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'org.json:json:20210307'
-    implementation 'ai.picovoice:eagle-android:1.0.1'
+    implementation 'com.airbnb.android:lottie:6.4.0'
 }

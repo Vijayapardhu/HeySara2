@@ -31,6 +31,14 @@ import android.net.Uri;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.TextView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.TreeMap;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class SaraSettingsActivity extends AppCompatActivity {
     private static final int PICK_PPN_FILE = 101;
@@ -39,65 +47,41 @@ public class SaraSettingsActivity extends AppCompatActivity {
     private static final String KEY_PPN_PATH = "porcupine_ppn_path";
     private static final String KEY_DISABLED_COMMANDS = "disabled_commands";
 
+    private EditText searchCommandsEditText;
+    private RecyclerView commandsRecyclerView;
+    private CommandCategoryAdapter commandAdapter;
+    private Map<String, List<String>> categorizedCommands = new TreeMap<>();
+
     private EditText editAccessKey;
     private Button btnSave;
-    private LinearLayout commandsListLayout;
-    private Set<String> disabledCommands = new HashSet<>();
+    private Button btnGetAccessKey;
+    private Button btnEnableDeviceAdmin;
     private EditText editUpdateUrl;
-    private Button btnSaveUpdateUrl;
     private EditText editUpdateVersion;
+    private Button btnSaveUpdateUrl;
+    private TextView linkSetupGuide;
     private String userRole = "user";
+    private Set<String> disabledCommands = new HashSet<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_onboarding_picovoice);
+        setContentView(R.layout.activity_sara_settings);
 
-        // Add secret key field
-        // editSecretKey = new EditText(this);
-        // editSecretKey.setHint("Set Secret Key for Unlock");
-        // LinearLayout rootLayout = findViewById(R.id.root_layout); // Assume root layout has this id
-        // rootLayout.addView(editSecretKey, 0); // Add at the top
-
+        // Wire up new/old views
         editAccessKey = findViewById(R.id.edit_access_key);
         btnSave = findViewById(R.id.btn_save_picovoice);
-        commandsListLayout = findViewById(R.id.commands_list_container);
+        btnGetAccessKey = findViewById(R.id.btn_get_access_key);
+        btnEnableDeviceAdmin = findViewById(R.id.btn_enable_device_admin);
         editUpdateUrl = findViewById(R.id.edit_update_url);
-        btnSaveUpdateUrl = findViewById(R.id.btn_save_update_url);
         editUpdateVersion = findViewById(R.id.edit_update_version);
+        btnSaveUpdateUrl = findViewById(R.id.btn_save_update_url);
+        linkSetupGuide = findViewById(R.id.link_setup_guide);
 
         SharedPreferences prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String accessKey = prefs.getString(KEY_ACCESS_KEY, "");
         disabledCommands = prefs.getStringSet(KEY_DISABLED_COMMANDS, new HashSet<>());
         editAccessKey.setText(accessKey);
-
-        // Load secret key if set
-        // SharedPreferences appLockPrefs = getSharedPreferences("AppLockPrefs", Context.MODE_PRIVATE);
-        // String secretKey = appLockPrefs.getString("app_lock_secret", "");
-        // editSecretKey.setText(secretKey);
-
-        // Add command toggles
-        commandsListLayout.removeAllViews();
-        List<CommandHandler> handlers = CommandRegistry.getAllHandlers();
-        for (CommandHandler handler : handlers) {
-            if (handler instanceof CommandRegistry.SuggestionProvider) {
-                List<String> suggestions = ((CommandRegistry.SuggestionProvider) handler).getSuggestions();
-                for (String command : suggestions) {
-                    View row = getLayoutInflater().inflate(android.R.layout.simple_list_item_multiple_choice, null);
-                    Switch toggle = new Switch(this);
-                    toggle.setText(command);
-                    toggle.setChecked(!disabledCommands.contains(command));
-                    toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                        if (isChecked) {
-                            disabledCommands.remove(command);
-                        } else {
-                            disabledCommands.add(command);
-                        }
-                    });
-                    commandsListLayout.addView(toggle);
-                }
-            }
-        }
 
         btnSave.setOnClickListener(v -> {
             String key = editAccessKey.getText().toString().trim();
@@ -105,46 +89,15 @@ public class SaraSettingsActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please enter your Picovoice Access Key", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
-            // Set the PPN path to the bundled asset
             String ppnPath = "keywords/sara_android.ppn";
-            
             prefs.edit()
                 .putString(KEY_ACCESS_KEY, key)
                 .putString(KEY_PPN_PATH, ppnPath)
                 .putStringSet(KEY_DISABLED_COMMANDS, disabledCommands)
                 .apply();
             Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show();
-
-            // Save secret key
-            // String secret = editSecretKey.getText().toString().trim();
-            // appLockPrefs.edit().putString("app_lock_secret", secret).apply();
-            // Toast.makeText(this, "Secret key saved!", Toast.LENGTH_SHORT).show();
-
-            // Store the access key in Firestore under the user's document
-            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
-            db.collection("users").document(uid)
-                .update("picovoice_key", key)
-                .addOnSuccessListener(aVoid -> Log.d("SaraSettingsActivity", "Picovoice key updated in Firestore"))
-                .addOnFailureListener(e -> Log.e("SaraSettingsActivity", "Failed to update Picovoice key in Firestore", e));
-
-            // Launch permissions checklist before going to MainActivity
-            Intent checklistIntent = new Intent(this, PermissionsChecklistActivity.class);
-            startActivity(checklistIntent);
-            finish();
         });
 
-        Button btnEnableDeviceAdmin = findViewById(R.id.btn_enable_device_admin);
-        btnEnableDeviceAdmin.setOnClickListener(v -> {
-            ComponentName adminComponent = new ComponentName(this, SaraDeviceAdminReceiver.class);
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable device admin for Sara features.");
-            startActivityForResult(intent, 1001);
-        });
-
-        Button btnGetAccessKey = findViewById(R.id.btn_get_access_key);
         btnGetAccessKey.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("Access Key", "Hey Sarah");
@@ -154,21 +107,26 @@ public class SaraSettingsActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        TextView linkSetupGuide = findViewById(R.id.link_setup_guide);
+        btnEnableDeviceAdmin.setOnClickListener(v -> {
+            ComponentName adminComponent = new ComponentName(this, SaraDeviceAdminReceiver.class);
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable device admin for Sara features.");
+            startActivityForResult(intent, 1001);
+        });
+
         linkSetupGuide.setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://sara.tiiny.site"));
             startActivity(browserIntent);
         });
         linkSetupGuide.setMovementMethod(LinkMovementMethod.getInstance());
 
-        // Fetch user role from Firestore
+        // Admin update fields logic
         editUpdateUrl.setVisibility(View.GONE);
         btnSaveUpdateUrl.setVisibility(View.GONE);
         editUpdateVersion.setVisibility(View.GONE);
-
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-
         db.collection("users").document(uid).get()
             .addOnSuccessListener(document -> {
                 if (document.exists() && "admin".equals(document.getString("role"))) {
@@ -176,7 +134,6 @@ public class SaraSettingsActivity extends AppCompatActivity {
                     editUpdateUrl.setVisibility(View.VISIBLE);
                     btnSaveUpdateUrl.setVisibility(View.VISIBLE);
                     editUpdateVersion.setVisibility(View.VISIBLE);
-                    // Fetch current APK URL and version
                     db.collection("app_update").document("latest").get()
                         .addOnSuccessListener(updateDoc -> {
                             if (updateDoc.exists()) {
@@ -192,7 +149,6 @@ public class SaraSettingsActivity extends AppCompatActivity {
                         });
                 }
             });
-
         btnSaveUpdateUrl.setOnClickListener(v -> {
             String url = editUpdateUrl.getText().toString().trim();
             String versionStr = editUpdateVersion.getText().toString().trim();
@@ -210,22 +166,61 @@ public class SaraSettingsActivity extends AppCompatActivity {
             }
         });
 
-        Button btnEnrollEagle = new Button(this);
-        btnEnrollEagle.setText("Enroll Voice for Speaker ID");
-        btnEnrollEagle.setOnClickListener(v -> {
-            Intent intent = new Intent(this, EagleDemoActivity.class);
-            startActivity(intent);
-        });
-        LinearLayout layout = findViewById(R.id.settings_layout); // Make sure your settings root layout has this id
-        layout.addView(btnEnrollEagle);
+        searchCommandsEditText = findViewById(R.id.search_commands);
+        commandsRecyclerView = findViewById(R.id.commands_recycler_view);
+        commandsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        Button btnEagleDemo = new Button(this);
-        btnEagleDemo.setText("Speaker ID Demo");
-        btnEagleDemo.setOnClickListener(v -> {
-            Intent intent = new Intent(this, EagleDemoActivity.class);
-            startActivity(intent);
+        // Gather and categorize commands, allowing commands to appear under all relevant categories
+        List<CommandHandler> handlers = CommandRegistry.getAllHandlers();
+        categorizedCommands.clear();
+        Map<String, Set<String>> commandToCategories = new HashMap<>();
+        for (CommandHandler handler : handlers) {
+            String category = handler.getClass().getSimpleName().replace("Handler", "");
+            if (handler instanceof CommandRegistry.SuggestionProvider) {
+                List<String> suggestions = ((CommandRegistry.SuggestionProvider) handler).getSuggestions();
+                Collections.sort(suggestions, String.CASE_INSENSITIVE_ORDER);
+                if (!categorizedCommands.containsKey(category)) {
+                    categorizedCommands.put(category, new ArrayList<>());
+                }
+                for (String command : suggestions) {
+                    categorizedCommands.get(category).add(command);
+                    if (!commandToCategories.containsKey(command)) {
+                        commandToCategories.put(command, new HashSet<>());
+                    }
+                    commandToCategories.get(command).add(category);
+                }
+            }
+        }
+        commandAdapter = new CommandCategoryAdapter(categorizedCommands, commandToCategories);
+        commandsRecyclerView.setAdapter(commandAdapter);
+
+        // Filter logic
+        searchCommandsEditText.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterCommands(s.toString());
+            }
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
         });
-        layout.addView(btnEagleDemo);
+    }
+
+    private void filterCommands(String query) {
+        Map<String, List<String>> filtered = new TreeMap<>();
+        for (String category : categorizedCommands.keySet()) {
+            List<String> filteredList = new ArrayList<>();
+            for (String command : categorizedCommands.get(category)) {
+                if (command.toLowerCase().contains(query.toLowerCase())) {
+                    filteredList.add(command);
+                }
+            }
+            if (!filteredList.isEmpty()) {
+                filtered.put(category, filteredList);
+            }
+        }
+        commandAdapter.setData(filtered);
     }
 
     @Override

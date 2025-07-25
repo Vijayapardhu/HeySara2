@@ -5,7 +5,7 @@
     android:id="@+id/settings_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/windowBackground">
+    android:background="@drawable/bg_gradient_orange_white">
 
     <ScrollView
         android:id="@+id/settings_scroll"
@@ -25,16 +25,181 @@
             android:gravity="center_horizontal">
 
             <TextView
-                android:id="@+id/settings_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sara Settings"
-                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:paddingBottom="8dp"
+                android:paddingTop="48dp" />
+
+
+            <!-- Account Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Picovoice Access Key"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:paddingBottom="8dp"
+                android:paddingTop="28dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_access_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Picovoice Access Key"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save_picovoice"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Save Access Key"
+                android:layout_marginBottom="8dp"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_get_access_key"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Get Access Key"
+                android:layout_marginBottom="16dp"
+                app:cornerRadius="8dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Device Admin Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Device Admin"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:paddingBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_enable_device_admin"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enable Device Admin"
+                android:layout_marginBottom="16dp"
+                app:cornerRadius="8dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginBottom="16dp" />
+
+            <!-- App Update Section (admin only) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="App Update (Admin Only)"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:visibility="gone"
+                android:paddingBottom="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_update_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Update APK URL (admin only)"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_update_version"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Update Version Code (admin only)"
+                    android:inputType="number"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save_update_url"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Save Update URL (admin only)"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cornerRadius="8dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Setup Guide Link -->
+            <TextView
+                android:id="@+id/link_setup_guide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Setup Guide"
+                android:textColor="@color/primary"
                 android:textStyle="bold"
                 android:paddingBottom="16dp"
-                android:textColor="?android:attr/textColorPrimary"/>
+                android:clickable="true"
+                android:focusable="true" />
 
-            <!-- Dynamic buttons will be added here programmatically -->
+            <!-- Command Search Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Commands"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:paddingBottom="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/search_commands"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Search commands..."
+                    android:drawableStart="@android:drawable/ic_menu_search"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                android:layout_marginBottom="16dp">
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/commands_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"/>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout> 
