@@ -4,10 +4,6 @@ import ai.picovoice.porcupine.PorcupineException;
 import ai.picovoice.porcupine.PorcupineManager;
 import ai.picovoice.porcupine.PorcupineManagerCallback;
 
-import ai.picovoice.eagle.EagleException;
-import ai.picovoice.eagle.Eagle;
-import ai.picovoice.eagle.EagleProfile;
-
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.app.Notification;
@@ -92,33 +88,6 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
     private String pendingUnlockAppName = null;
     private String pendingUnlockAction = null;
 
-    private Eagle eagle;
-    private static final String EAGLE_ACCESS_KEY = "YOUR_EAGLE_ACCESS_KEY"; // TODO: Store securely
-    private String speakerProfilePath = "path/to/speaker/profile.pv"; // TODO: Set actual path
-    private boolean isSpeakerIdentified = false;
-    private static final float EAGLE_SCORE_THRESHOLD = 0.8f;
-
-    private List<EagleProfile> speakerProfiles;
-
-    private final PorcupineManagerCallback porcupineManagerCallback = new PorcupineManagerCallback() {
-        @Override
-        public void invoke(int keywordIndex) {
-            Log.d("Porcupine", "Wake word detected!");
-            if (isPausedForCommand) return;
-
-            isPausedForCommand = true;
-            try {
-                porcupineManager.stop();
-            } catch (PorcupineException e) {
-                Log.e("Porcupine", "Failed to stop porcupine: " + e.getMessage());
-            }
-
-            // Wake word detected, now show overlay to listen for command
-            sendBroadcast(new Intent("com.mvp.sarah.ACTION_PLAY_BEEP"));
-            wakeScreenAndNotify();
-        }
-    };
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -134,56 +103,7 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         setupCloseUIReciever();
         setupInterruptReceiver();
         setupSecretKeyReceiver();
-        // Initialize Eagle for speaker identification
-        initEagle();
-        speakerProfiles = loadProfiles();
-        if (speakerProfiles != null && !speakerProfiles.isEmpty()) {
-            String accessKey = getSharedPreferences("SaraSettingsPrefs", MODE_PRIVATE).getString("picovoice_access_key", "");
-            try {
-                eagle = new Eagle.Builder()
-                    .setSpeakerProfiles(speakerProfiles.toArray(new EagleProfile[0]))
-                    .setAccessKey(accessKey)
-                    .build(getApplicationContext());
-                Log.d("SaraVoiceService", "Eagle initialized with " + speakerProfiles.size() + " profiles");
-            } catch (Exception e) {
-                Log.e("SaraVoiceService", "Failed to initialize Eagle: " + e.getMessage());
-            }
-        }
         Log.d("SaraVoiceService", "onCreate completed");
-    }
-
-    private void initEagle() {
-        SharedPreferences prefs = getSharedPreferences("SaraSettingsPrefs", Context.MODE_PRIVATE);
-        String accessKey = prefs.getString("picovoice_access_key", "");
-        String profilePath = prefs.getString("eagle_profile_path", "");
-        if (accessKey.isEmpty()) {
-            Log.e("Eagle", "Eagle access key not set. Please configure in Sara settings.");
-            return;
-        }
-        if (profilePath.isEmpty()) {
-            Log.e("Eagle", "Eagle speaker profile not set. Please enroll your voice in settings.");
-            return;
-        }
-        try {
-            eagle = new Eagle.Builder()
-                .setSpeakerProfiles(speakerProfiles.toArray(new EagleProfile[0]))
-                .setAccessKey(accessKey)
-                .build(getApplicationContext());
-            Log.d("SaraVoiceService", "Eagle initialized with " + speakerProfiles.size() + " profiles");
-        } catch (Exception e) {
-            Log.e("SaraVoiceService", "Failed to initialize Eagle: " + e.getMessage());
-        }
-    }
-
-    private void stopEagle() {
-        if (eagle != null) {
-            try {
-                eagle.delete();
-                Log.d("Eagle", "Eagle stopped and deleted");
-            } catch (Exception e) {
-                Log.e("Eagle", "Error stopping Eagle: " + e.getMessage());
-            }
-        }
     }
 
     private void startPorcupineListening() {
@@ -372,10 +292,6 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
 
     @Override
     public void onCommandHandled(String command) {
-        if (!isSpeakerIdentified) {
-            FeedbackProvider.speakAndToast(this, "I can't help you. Speaker not recognized.");
-            return;
-        }
         if (bubbleOverlayView != null) {
             bubbleOverlayView.postDelayed(this::removeBubbleOverlay, 200);
         }
@@ -383,10 +299,6 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
 
     @Override
     public void onCommandError(String command) {
-        if (!isSpeakerIdentified) {
-            FeedbackProvider.speakAndToast(this, "I can't help you. Speaker not recognized.");
-            return;
-        }
         Log.d("SaraVoiceService", "Command error for: " + command + ". Resetting state.");
         if (bubbleOverlayView != null) {
             bubbleOverlayView.postDelayed(this::removeBubbleOverlay, 200);
@@ -529,7 +441,6 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
                 Log.e("Porcupine", "Failed to stop/delete porcupine: " + e.getMessage());
             }
         }
-        stopEagle(); // Stop Eagle on service destruction
         
         if (callListeningReceiver != null) {
             try {
@@ -994,42 +905,20 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         }
     }
 
-    private List<EagleProfile> loadProfiles() {
-        List<EagleProfile> loadedProfiles = new ArrayList<>();
-        int i = 1;
-        while (true) {
-            String filename = "eagle_profile_" + i + ".pv";
+    private final PorcupineManagerCallback porcupineManagerCallback = new PorcupineManagerCallback() {
+        @Override
+        public void invoke(int keywordIndex) {
+            Log.d("Porcupine", "Wake word detected!");
+            if (isPausedForCommand) return;
+            isPausedForCommand = true;
             try {
-                FileInputStream fis = openFileInput(filename);
-                byte[] bytes = new byte[fis.available()];
-                fis.read(bytes);
-                fis.close();
-                loadedProfiles.add(new EagleProfile(bytes));
-                i++;
-            } catch (IOException e) {
-                break;
+                porcupineManager.stop();
+            } catch (PorcupineException e) {
+                Log.e("Porcupine", "Failed to stop porcupine: " + e.getMessage());
             }
+            // Wake word detected, now show overlay to listen for command
+            sendBroadcast(new Intent("com.mvp.sarah.ACTION_PLAY_BEEP"));
+            wakeScreenAndNotify();
         }
-        return loadedProfiles;
-    }
-
-    // In your audio processing loop, after getting a frame:
-    private int getIdentifiedSpeaker(short[] frame) {
-        if (eagle == null) return -1;
-        try {
-            float[] scores = eagle.process(frame);
-            int bestSpeaker = 0;
-            float maxScore = scores[0];
-            for (int i = 1; i < scores.length; i++) {
-                if (scores[i] > maxScore) {
-                    maxScore = scores[i];
-                    bestSpeaker = i;
-                }
-            }
-            return bestSpeaker; // Index of the identified speaker
-        } catch (Exception e) {
-            Log.e("SaraVoiceService", "Eagle processing error: " + e.getMessage());
-            return -1;
-        }
-    }
+    };
 }

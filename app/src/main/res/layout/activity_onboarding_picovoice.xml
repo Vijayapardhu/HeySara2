@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="890dp">
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
             android:textColor="#FFF"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:layout_marginTop="62dp"
+            android:layout_marginTop="92dp"
             android:layout_marginBottom="8dp"
             android:layout_gravity="center_horizontal" />
 
@@ -62,30 +62,17 @@
         </androidx.cardview.widget.CardView>
 
         <Button
-            android:id="@+id/btn_get_access_key"
+            android:id="@+id/btn_save_picovoice"
             android:layout_width="340dp"
             android:layout_height="48dp"
-            android:text="Get Access Key"
-            android:backgroundTint="#FF9800"
-            android:textColor="#FFF"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
             android:background="@drawable/orange_rounded_button"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:elevation="4dp"/>
-
-        <TextView
-            android:id="@+id/link_setup_guide"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="See setup guide"
-            android:textColor="#1976D2"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:autoLink="web"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:padding="4dp"/>
+            android:backgroundTint="#FFA726"
+            android:elevation="4dp"
+            android:text="Save &amp; Continue"
+            android:textColor="#FFF" />
 
         <LinearLayout
             android:id="@+id/commands_list_container"
@@ -94,19 +81,6 @@
             android:orientation="vertical"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"/>
-
-        <Button
-            android:id="@+id/btn_save_picovoice"
-            android:layout_width="340dp"
-            android:layout_height="48dp"
-            android:text="Save &amp; Continue"
-            android:backgroundTint="#FFA726"
-            android:textColor="#FFF"
-            android:background="@drawable/orange_rounded_button"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="32dp"
-            android:elevation="4dp"/>
 
         <Button
             android:id="@+id/btn_enable_device_admin"
@@ -160,6 +134,32 @@
             android:inputType="number"
             android:layout_marginTop="8dp"
             android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_get_access_key"
+            android:layout_width="340dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/orange_rounded_button"
+            android:backgroundTint="#FF9800"
+            android:elevation="4dp"
+            android:text="Get Access Key"
+            android:textColor="#FFF" />
+
+        <TextView
+            android:id="@+id/link_setup_guide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:autoLink="web"
+            android:padding="4dp"
+            android:text="See setup guide"
+            android:textColor="#1976D2"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </ScrollView> 
  

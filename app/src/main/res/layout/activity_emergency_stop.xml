@@ -2,27 +2,56 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
-    android:background="@android:color/white">
+    android:gravity="center_horizontal"
+    android:padding="0dp"
+    android:background="@drawable/bg_gradient_orange_white">
 
     <TextView
-        android:id="@+id/text_emergency_message"
-        android:layout_width="wrap_content"
+        android:id="@+id/text_emergency_mode"
+        android:layout_width="411dp"
         android:layout_height="wrap_content"
-        android:text="Slide to stop emergency mode"
-        android:textSize="20sp"
-        android:textColor="#D32F2F"
         android:layout_marginBottom="32dp"
-        android:gravity="center" />
+        android:gravity="center_horizontal"
+        android:text="Emergency Mode Activated"
+        android:textColor="#D32F2F"
+        android:layout_marginTop="100dp"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/emergency_lottie"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:lottie_rawRes="@raw/phone_ring"
+        android:layout_width="411dp"
+        android:layout_height="447dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp" />
 
     <SeekBar
         android:id="@+id/slider_stop"
-        android:layout_width="300dp"
+        android:layout_width="400dp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="0dp"
         android:max="100"
-        android:progress="0"
-        android:layout_gravity="center_horizontal" />
+        android:padding="12dp"
+        android:progress="10"
+        android:progressDrawable="@drawable/seekbar_emergency_progress"
+        android:thumb="@drawable/seekbar_emergency_thumb" />
 
-</LinearLayout> 
+    <TextView
+        android:id="@+id/text_emergency_message"
+        android:layout_width="411dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="0dp"
+        android:gravity="center_horizontal"
+        android:text="Slide to stop emergency mode"
+        android:textColor="#D32F2F"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
