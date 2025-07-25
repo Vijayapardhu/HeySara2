@@ -47,6 +47,14 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
+import android.os.Build;
+import android.provider.Settings;
+import android.content.Intent;
+import android.net.Uri;
+import android.app.Activity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -242,6 +250,10 @@ public class MainActivity extends AppCompatActivity {
         // Start TriggerDetectionService for background shake detection
         Intent triggerServiceIntent = new Intent(this, TriggerDetectionService.class);
         ContextCompat.startForegroundService(this, triggerServiceIntent);
+
+        // Start ShakeDetectionService automatically
+        Intent shakeIntent = new Intent(this, ShakeDetectionService.class);
+        androidx.core.content.ContextCompat.startForegroundService(this, shakeIntent);
         isInitialized = true;
 
         // Scan and store all apps mapping on first launch
@@ -249,6 +261,16 @@ public class MainActivity extends AppCompatActivity {
             scanAndStoreAllApps(this);
             prefs.edit().putBoolean("all_apps_scanned", true).apply();
         }
+
+        // Schedule periodic update check
+        PeriodicWorkRequest updateWork = new PeriodicWorkRequest.Builder(
+            UpdateCheckWorker.class,
+            12, TimeUnit.HOURS)
+            .build();
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "update_check",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            updateWork);
     }
 
     private void scanAndStoreAllApps(Context context) {

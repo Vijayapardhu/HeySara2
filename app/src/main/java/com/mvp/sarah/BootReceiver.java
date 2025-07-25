@@ -3,18 +3,14 @@ package com.mvp.sarah;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import androidx.core.content.ContextCompat;
 
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Intent serviceIntent = new Intent(context, SaraVoiceService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent);
-            } else {
-                context.startService(serviceIntent);
-            }
+            Intent shakeIntent = new Intent(context, ShakeDetectionService.class);
+            ContextCompat.startForegroundService(context, shakeIntent);
         }
     }
 } 
