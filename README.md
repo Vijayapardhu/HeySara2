@@ -1,5 +1,4 @@
-# HeySara Android App
-
+# HeySara Project Setup
 ## Setup Process
 
 ### 1. Prerequisites
