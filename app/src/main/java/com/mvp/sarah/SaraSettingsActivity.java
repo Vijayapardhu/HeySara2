@@ -209,6 +209,23 @@ public class SaraSettingsActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please enter a valid URL and version code", Toast.LENGTH_SHORT).show();
             }
         });
+
+        Button btnEnrollEagle = new Button(this);
+        btnEnrollEagle.setText("Enroll Voice for Speaker ID");
+        btnEnrollEagle.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EagleDemoActivity.class);
+            startActivity(intent);
+        });
+        LinearLayout layout = findViewById(R.id.settings_layout); // Make sure your settings root layout has this id
+        layout.addView(btnEnrollEagle);
+
+        Button btnEagleDemo = new Button(this);
+        btnEagleDemo.setText("Speaker ID Demo");
+        btnEagleDemo.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EagleDemoActivity.class);
+            startActivity(intent);
+        });
+        layout.addView(btnEagleDemo);
     }
 
     @Override

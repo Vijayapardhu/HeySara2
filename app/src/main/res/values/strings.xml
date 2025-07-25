@@ -12,6 +12,6 @@
     <string name="image2_description">Cookies</string>
     <string name="image3_description">Cake</string>
     <string name="results_placeholder">(Results will appear here)</string>
-    <string name="accessibility_service_description">Allows Sara to perform clicks on your behalf based on voice commands. Sara can see the text on the screen to find the correct button to press.</string>
+    <string name="accessibility_service_description">Allows Sara to perform actions on your behalf based on voice commands.</string>
     <string name="default_web_client_id">534311598668-tcedjq8c59e3fjhure6u8clmjqj6rqgm.apps.googleusercontent.com</string>
 </resources>

@@ -110,9 +110,10 @@ public class PermissionsChecklistActivity extends Activity {
             if (!PermissionUtils.hasLocationPermission(this)) allGranted = false;
             if (!PermissionUtils.hasBackgroundLocationPermission(this)) allGranted = false;
             if (isAdmin && isAccessibility && isDnd && allGranted) {
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
                 finish();
             } else {
-                // Show a message to the user (Toast)
                 android.widget.Toast.makeText(this, "Please enable all permissions and settings to continue.", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
@@ -159,10 +160,18 @@ public class PermissionsChecklistActivity extends Activity {
 
     private boolean isAccessibilityServiceEnabled(Context context, Class<?> service) {
         String prefString = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        if (prefString == null) return false;
-        String serviceName = context.getPackageName() + "/" + service.getName();
-        // Also check for flattened name (package/class)
-        String flattened = new ComponentName(context, service).flattenToString();
-        return prefString.toLowerCase().contains(serviceName.toLowerCase()) || prefString.toLowerCase().contains(flattened.toLowerCase());
+        if (prefString == null) {
+            Log.d("PermissionsChecklist", "ENABLED_ACCESSIBILITY_SERVICES is null");
+            return false;
+        }
+        String expected = new ComponentName(context, service).flattenToString();
+        Log.d("PermissionsChecklist", "Expected accessibility: " + expected);
+        for (String enabled : prefString.split(":")) {
+            Log.d("PermissionsChecklist", "Enabled service: " + enabled);
+            if (enabled.equalsIgnoreCase(expected)) {
+                return true;
+            }
+        }
+        return false;
     }
 } 
