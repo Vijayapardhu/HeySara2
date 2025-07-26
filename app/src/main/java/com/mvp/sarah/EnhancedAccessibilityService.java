@@ -856,7 +856,9 @@ public class EnhancedAccessibilityService extends AccessibilityService {
         TelecomManager telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
         if (telecomManager != null) {
             try {
-                telecomManager.endCall();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    telecomManager.endCall();
+                }
                 FeedbackProvider.speakAndToast(this, "Call rejected");
             } catch (SecurityException e) {
                 Log.e(TAG, "SecurityException in endCall: " + e.getMessage());
@@ -1198,7 +1200,9 @@ public class EnhancedAccessibilityService extends AccessibilityService {
         try {
             TelecomManager telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
             if (telecomManager != null) {
-                telecomManager.endCall();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    telecomManager.endCall();
+                }
                 FeedbackProvider.speakAndToast(this, "Call ended");
             }
         } catch (SecurityException e) {

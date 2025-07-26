@@ -90,7 +90,9 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         "turn off power saving",
         "toggle ultra power saving",
         "turn on ultra power saving",
-        "turn off ultra power saving"
+        "turn off ultra power saving",
+        "list quick settings tiles",
+        "list flashlight labels"
     );
 
     private static final String PREFS_NAME = "QuickSettingsPrefs";
@@ -103,7 +105,7 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         DEFAULT_LABELS.put("mobile_data", Arrays.asList("Internet", "Mobile data", "Cellular data", "Data"));
         DEFAULT_LABELS.put("hotspot", Arrays.asList("Hotspot", "Mobile hotspot", "Tethering"));
         DEFAULT_LABELS.put("airplane", Arrays.asList("Airplane mode", "Flight mode", "Aeroplane mode"));
-        DEFAULT_LABELS.put("flashlight", Arrays.asList("Flashlight", "Torch", "Lantern", "Light"));
+        DEFAULT_LABELS.put("flashlight", Arrays.asList("Flashlight", "Torch", "Lantern", "Light", "Flash", "LED", "Camera flash"));
         // Add more as needed
     }
 
@@ -142,13 +144,22 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         List<String> labels = new ArrayList<>();
         // Add user-mapped label if present
         String mapped = getMappedTileLabel(context, logicalCommand, null);
-        if (mapped != null) labels.add(mapped);
+        if (mapped != null && !mapped.trim().isEmpty()) {
+            labels.add(mapped);
+        }
         // Add all defaults
         List<String> defaults = DEFAULT_LABELS.get(logicalCommand);
         if (defaults != null) {
             for (String d : defaults) {
-                if (!labels.contains(d)) labels.add(d);
+                if (!labels.contains(d)) {
+                    labels.add(d);
+                }
             }
+        }
+        // Ensure we always return at least one label
+        if (labels.isEmpty()) {
+            Log.w(TAG, "No labels found for command: " + logicalCommand + ", using fallback");
+            labels.add(logicalCommand); // Fallback to command name
         }
         return labels;
     }
@@ -189,6 +200,11 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
     }
 
     private void sendClickLabelBroadcast(Context context, String label) {
+        if (label == null || label.trim().isEmpty()) {
+            Log.w(TAG, "Attempted to send broadcast with null or empty label");
+            return;
+        }
+        Log.d(TAG, "Sending click label broadcast for: " + label);
         Intent intent = new Intent("com.mvp.sarah.ACTION_CLICK_LABEL");
         intent.putExtra("label", label);
         context.sendBroadcast(intent);
@@ -203,6 +219,15 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
             Intent intent = new Intent("com.mvp.sarah.ACTION_LIST_QUICK_SETTINGS_TILES");
             context.sendBroadcast(intent);
             FeedbackProvider.speakAndToast(context, "Listing all visible quick settings tiles");
+            return;
+        }
+        
+        // Debug command to list flashlight labels
+        if (lowerCmd.contains("list flashlight labels")) {
+            List<String> labels = getAllLabels(context, "flashlight");
+            String labelList = String.join(", ", labels);
+            Log.d(TAG, "Flashlight labels: " + labelList);
+            FeedbackProvider.speakAndToast(context, "Flashlight labels: " + labelList);
             return;
         }
 
@@ -222,10 +247,8 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         }
         
         // Handle flashlight/torch
-        if (lowerCmd.contains("flashlight") || lowerCmd.contains("torch") || lowerCmd.contains("lantern") || lowerCmd.contains("light")) {
-            for (String label : getAllLabels(context, "flashlight")) {
-                sendClickLabelBroadcast(context, label);
-            }
+        if (lowerCmd.contains("flash light") || lowerCmd.contains("torch") || lowerCmd.contains("lantern") || lowerCmd.contains("light")) {
+            handleFlashlight(context, lowerCmd);
             return;
         }
         
@@ -355,9 +378,20 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
     
     private void handleFlashlight(Context context, String command) {
         Log.d(TAG, "Handling flashlight command: " + command);
-        String tileKeyword = "Flashlight";
-        triggerQuickSettingsTile(context, tileKeyword);
-        String action = command.contains("turn off") || command.contains("off") ? "turned off" : "turned on";
+        boolean shouldTurnOn = !command.contains("turn off") && !command.contains("off");
+        
+        // Try all possible flashlight labels
+        List<String> labels = getAllLabels(context, "flashlight");
+        Log.d(TAG, "Flashlight labels to try: " + labels);
+        
+        for (String label : labels) {
+            if (label != null && !label.trim().isEmpty()) {
+                sendClickLabelBroadcast(context, label);
+                Log.d(TAG, "Sent broadcast for flashlight label: " + label);
+            }
+        }
+        
+        String action = shouldTurnOn ? "turned on" : "turned off";
         FeedbackProvider.speakAndToast(context, "Flashlight " + action);
     }
     

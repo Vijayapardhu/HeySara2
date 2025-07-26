@@ -1,6 +1,6 @@
 package com.mvp.sarah;
 
-import android.app.Activity;
+import androidx.fragment.app.FragmentActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
@@ -10,7 +10,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class EmergencyStopActivity extends Activity {
+import androidx.activity.OnBackPressedCallback;
+
+public class EmergencyStopActivity extends FragmentActivity {
     private SeekBar slider;
     private boolean stopped = false;
 
@@ -42,6 +44,13 @@ public class EmergencyStopActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Prevent back button
+            }
+        });
     }
 
     // Prevent touches outside the slider
@@ -61,10 +70,5 @@ public class EmergencyStopActivity extends Activity {
             }
         }
         return super.dispatchTouchEvent(ev);
-    }
-
-    @Override
-    public void onBackPressed() {
-        // Prevent back button
     }
 } 

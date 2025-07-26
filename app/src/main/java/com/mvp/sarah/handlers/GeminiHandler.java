@@ -60,62 +60,62 @@ public class GeminiHandler implements CommandHandler {
                 FeedbackProvider.speakAndToast(context, "Gemini API key not available.");
                 return;
             }
-            // Extract the actual query from the command
-            String query = command;
-            String lowercasedCommand = command.toLowerCase();
-            if (lowercasedCommand.startsWith("ask")) {
-                query = command.substring(3).trim();
-            }
-            final String finalQuery = query;
-            new Thread(() -> {
-                try {
+        // Extract the actual query from the command
+        String query = command;
+        String lowercasedCommand = command.toLowerCase();
+        if (lowercasedCommand.startsWith("ask")) {
+            query = command.substring(3).trim();
+        }
+        final String finalQuery = query;
+        new Thread(() -> {
+            try {
                     String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey;
                     URL url = new URL(apiUrl);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                    conn.setDoOutput(true);
-                    String jsonInputString = "{\"contents\":[{\"parts\":[{\"text\":\"" + JSONObject.quote(finalQuery) + "\"}]}]}";
-                    try (OutputStream os = conn.getOutputStream()) {
-                        byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
-                        os.write(input, 0, input.length);
-                    }
-                    int responseCode = conn.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_OK) {
-                        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                            StringBuilder response = new StringBuilder();
-                            String responseLine;
-                            while ((responseLine = br.readLine()) != null) {
-                                response.append(responseLine.trim());
-                            }
-                            JSONObject jsonResponse = new JSONObject(response.toString());
-                            String text = jsonResponse.getJSONArray("candidates")
-                                                      .getJSONObject(0)
-                                                      .getJSONObject("content")
-                                                      .getJSONArray("parts")
-                                                      .getJSONObject(0)
-                                                      .getString("text");
-                            FeedbackProvider.speakAndToast(context, text);
-                        }
-                    } else {
-                        String errorMessage = "Error from API: " + responseCode + " " + conn.getResponseMessage();
-                        Log.e(TAG, errorMessage);
-                        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                            StringBuilder errorResponse = new StringBuilder();
-                            String responseLine;
-                            while ((responseLine = br.readLine()) != null) {
-                                errorResponse.append(responseLine.trim());
-                            }
-                            Log.e(TAG, "Error details: " + errorResponse.toString());
-                        }
-                        FeedbackProvider.speakAndToast(context, "Sorry, I couldn't get a response from the AI.");
-                    }
-                    conn.disconnect();
-                } catch (Exception e) {
-                    Log.e(TAG, "Error calling Gemini API", e);
-                    FeedbackProvider.speakAndToast(context, "Sorry, there was an error communicating with the AI.");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                conn.setDoOutput(true);
+                String jsonInputString = "{\"contents\":[{\"parts\":[{\"text\":\"" + JSONObject.quote(finalQuery) + "\"}]}]}";
+                try (OutputStream os = conn.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
                 }
-            }).start();
+                int responseCode = conn.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        JSONObject jsonResponse = new JSONObject(response.toString());
+                        String text = jsonResponse.getJSONArray("candidates")
+                                                  .getJSONObject(0)
+                                                  .getJSONObject("content")
+                                                  .getJSONArray("parts")
+                                                  .getJSONObject(0)
+                                                  .getString("text");
+                        FeedbackProvider.speakAndToast(context, text);
+                    }
+                } else {
+                    String errorMessage = "Error from API: " + responseCode + " " + conn.getResponseMessage();
+                    Log.e(TAG, errorMessage);
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder errorResponse = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            errorResponse.append(responseLine.trim());
+                        }
+                        Log.e(TAG, "Error details: " + errorResponse.toString());
+                    }
+                        FeedbackProvider.speakAndToast(context, "Sorry, I couldn't get a response from the AI.");
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                Log.e(TAG, "Error calling Gemini API", e);
+                FeedbackProvider.speakAndToast(context, "Sorry, there was an error communicating with the AI.");
+            }
+        }).start();
         });
     }
 }

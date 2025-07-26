@@ -63,6 +63,8 @@ import android.content.ComponentName;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Arrays;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 
 public class ClickAccessibilityService extends AccessibilityService {
 
@@ -221,8 +223,14 @@ public class ClickAccessibilityService extends AccessibilityService {
                 listQuickSettingsTiles();
             } else if ("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO".equals(intent.getAction())) {
                 takePhotoAuto();
+            } else if ("com.mvp.sarah.ACTION_TAKE_PHOTO_ONLY".equals(intent.getAction())) {
+                takePhotoOnly();
             } else if ("com.mvp.sarah.ACTION_SWITCH_CAMERA".equals(intent.getAction())) {
                 switchCamera();
+            } else if ("com.mvp.sarah.ACTION_TAKE_PHOTO_WITH_TIMER".equals(intent.getAction())) {
+                int seconds = intent.getIntExtra("seconds", 3);
+                boolean isSelfie = intent.getBooleanExtra("is_selfie", false);
+                takePhotoWithTimer(seconds, isSelfie);
             }
         }
     };
@@ -287,7 +295,9 @@ public class ClickAccessibilityService extends AccessibilityService {
         filter.addAction("com.mvp.sarah.ACTION_DEBUG_QUICK_SETTINGS");
         filter.addAction("com.mvp.sarah.ACTION_LIST_QUICK_SETTINGS");
         filter.addAction("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
+        filter.addAction("com.mvp.sarah.ACTION_TAKE_PHOTO_ONLY");
         filter.addAction("com.mvp.sarah.ACTION_SWITCH_CAMERA");
+        filter.addAction("com.mvp.sarah.ACTION_TAKE_PHOTO_WITH_TIMER");
         registerReceiver(clickReceiver, filter, RECEIVER_EXPORTED);
         registerReceiver(actionReceiver, filter, RECEIVER_EXPORTED);
         setServiceInfo(info);
@@ -2504,7 +2514,7 @@ public class ClickAccessibilityService extends AccessibilityService {
             // Fallback logic if AI is too slow
             selectRandomOption(optionLabels);
         };
-        handler.postDelayed(timeoutRunnable, 10000); // 10 seconds
+        handler.postDelayed(timeoutRunnable, 30000); // 15 seconds for content generation
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -2811,7 +2821,7 @@ public class ClickAccessibilityService extends AccessibilityService {
             if (android.os.Build.VERSION.SDK_INT >= 28) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-        }, 200);
+        }, 700);
     }
 
     private void listAvailableTiles(AccessibilityNodeInfo node) {
@@ -2837,23 +2847,24 @@ public class ClickAccessibilityService extends AccessibilityService {
     private void takePhotoAuto() {
         FeedbackProvider.speakAndToast(this, "Opening camera and taking photo");
         
-        // Try to open the default camera app directly
-        Intent cameraIntent = new Intent(Intent.ACTION_MAIN);
-        cameraIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        cameraIntent.setPackage("com.motorola.camera3"); // Default Motorola camera
-        
-        try {
-            startActivity(cameraIntent);
-        } catch (Exception e) {
-            // Fallback to generic camera intent if specific app fails
+        // Find camera apps dynamically from installed apps using shared utility
+        String cameraPackage = AppUtils.findCameraAppPackage(this);
+        if (cameraPackage != null) {
+            Intent cameraIntent = new Intent(Intent.ACTION_MAIN);
+            cameraIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            cameraIntent.setPackage(cameraPackage);
+            cameraIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
             try {
-                Intent fallbackIntent = new Intent("android.media.action.IMAGE_CAPTURE");
-                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(fallbackIntent);
-            } catch (Exception e2) {
+                startActivity(cameraIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to open camera app: " + cameraPackage, e);
                 FeedbackProvider.speakAndToast(this, "Could not open camera app");
                 return;
             }
+        } else {
+            FeedbackProvider.speakAndToast(this, "No camera app found on device");
+            return;
         }
         
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -2861,11 +2872,42 @@ public class ClickAccessibilityService extends AccessibilityService {
         }, 3000);
     }
 
+    private void takePhotoOnly() {
+        Log.d(TAG, "Taking photo only (camera already open)");
+        attemptPhotoCapture(1);
+    }
+
+    private void takePhotoWithTimer(int seconds, boolean isSelfie) {
+        Log.d(TAG, "takePhotoWithTimer called with " + seconds + " seconds, selfie: " + isSelfie);
+        
+        // Start countdown from seconds down to 1
+        for (int i = seconds; i > 0; i--) {
+            final int currentSecond = i;
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (currentSecond > 3) {
+                    // For longer countdowns, only announce at 5, 3, 2, 1
+                    if (currentSecond == 5 || currentSecond <= 3) {
+                        FeedbackProvider.speakAndToast(this, currentSecond + "");
+                    }
+                } else {
+                    // For shorter countdowns, announce every second
+                    FeedbackProvider.speakAndToast(this, currentSecond + "");
+                }
+            }, (seconds - currentSecond) * 1000L);
+        }
+        
+        // Take photo after countdown completes
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            FeedbackProvider.speakAndToast(this, "Taking " + (isSelfie ? "selfie" : "photo") + " now!");
+            takePhotoOnly();
+        }, seconds * 1000L);
+    }
+
     private void attemptPhotoCapture(int attempt) {
         Log.d(TAG, "Attempting photo capture, attempt " + attempt);
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root != null) {
-            boolean captured = findAndClickCameraCaptureButton(root);
+            boolean captured = findAndClickCameraCaptureButton(root, "capture");
             if (captured) {
                 Log.d(TAG, "Photo capture button found and clicked on attempt " + attempt);
                 FeedbackProvider.speakAndToast(this, "Photo captured successfully");
@@ -2895,55 +2937,92 @@ public class ClickAccessibilityService extends AccessibilityService {
         }
     }
 
-    private boolean findAndClickCameraCaptureButton(AccessibilityNodeInfo node) {
+    private void logAllClickableButtons(AccessibilityNodeInfo node) {
+        if (node == null) return;
+        
+        CharSequence text = node.getText();
+        CharSequence desc = node.getContentDescription();
+        String className = node.getClassName() != null ? node.getClassName().toString() : "";
+        String resourceId = node.getViewIdResourceName();
+        
+        if (node.isClickable() && node.isVisibleToUser()) {
+            Log.d(TAG, "📱 CLICKABLE BUTTON: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "', className='" + className + "'");
+        }
+        
+        // Recursively search children
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            logAllClickableButtons(child);
+        }
+    }
+
+    private boolean findAndClickCameraCaptureButton(AccessibilityNodeInfo node, String buttonText) {
         if (node == null) return false;
         CharSequence text = node.getText();
         CharSequence desc = node.getContentDescription();
         String className = node.getClassName() != null ? node.getClassName().toString() : "";
         String resourceId = node.getViewIdResourceName();
 
+        // Debug: Log all clickable nodes to help identify the capture button
+        if (node.isClickable() && node.isVisibleToUser()) {
+            Log.d(TAG, "Found clickable node: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "', className='" + className + "'");
+        }
+
         if (node.isClickable() && node.isVisibleToUser()) {
             // Look for capture-related labels and classes
             boolean isCaptureButton = false;
+            String matchReason = "";
 
-            // Check text content
-            if (text != null) {
+            // Priority 1: Exact match with the provided button text
+            if (text != null && text.toString().equalsIgnoreCase(buttonText)) {
+                isCaptureButton = true;
+                matchReason = "exact text match: '" + text + "'";
+            }
+            // Priority 2: Content description exact match
+            else if (desc != null && desc.toString().equalsIgnoreCase(buttonText)) {
+                isCaptureButton = true;
+                matchReason = "exact description match: '" + desc + "'";
+            }
+            // Priority 3: Check text content for capture-related keywords
+            else if (text != null) {
                 String lowerText = text.toString().toLowerCase();
                 if (lowerText.equals("capture") || lowerText.equals("photo") ||
-                        lowerText.equals("shoot") || lowerText.equals("take") ||
-                        lowerText.contains("capture") || lowerText.contains("photo")) {
+                    lowerText.equals("shoot") || lowerText.equals("take") ||
+                    lowerText.contains("capture") || lowerText.contains("photo")) {
                     isCaptureButton = true;
+                    matchReason = "text contains capture keyword: '" + text + "'";
                 }
             }
-
-            // Check content description
-            if (desc != null) {
+            // Priority 4: Check content description for capture-related keywords
+            else if (desc != null) {
                 String lowerDesc = desc.toString().toLowerCase();
                 if (lowerDesc.equals("capture") || lowerDesc.equals("photo") ||
-                        lowerDesc.equals("shoot") || lowerDesc.equals("take") ||
-                        lowerDesc.contains("capture") || lowerDesc.contains("photo")) {
+                    lowerDesc.equals("shoot") || lowerDesc.equals("take") ||
+                    lowerDesc.contains("capture") || lowerDesc.contains("photo")) {
                     isCaptureButton = true;
+                    matchReason = "description contains capture keyword: '" + desc + "'";
                 }
             }
-
-            // Check resource ID
-            if (resourceId != null) {
+            // Priority 5: Check resource ID for capture-related patterns
+            else if (resourceId != null) {
                 String lowerResourceId = resourceId.toLowerCase();
                 if (lowerResourceId.contains("capture") || lowerResourceId.contains("photo") ||
-                        lowerResourceId.contains("shutter") || lowerResourceId.contains("shoot")) {
+                    lowerResourceId.contains("shutter") || lowerResourceId.contains("shoot")) {
                     isCaptureButton = true;
+                    matchReason = "resource ID contains capture keyword: '" + resourceId + "'";
                 }
             }
-
-            // Check class name for camera-specific classes
-            if (className.toLowerCase().contains("shutter") ||
+            // Priority 6: Check class name for camera-specific classes
+            else if (className.toLowerCase().contains("shutter") ||
                     className.toLowerCase().contains("capture") ||
                     className.toLowerCase().contains("camera")) {
                 isCaptureButton = true;
+                matchReason = "class name contains camera keyword: '" + className + "'";
             }
 
             if (isCaptureButton) {
-                Log.d(TAG, "Found camera capture button: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "', className='" + className + "'");
+                Log.d(TAG, "🎯 FOUND CAMERA CAPTURE BUTTON! " + matchReason);
+                Log.d(TAG, "Button details: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "', className='" + className + "'");
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 return true;
             }
@@ -2952,7 +3031,7 @@ public class ClickAccessibilityService extends AccessibilityService {
         // Recursively search children
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-            boolean found = findAndClickCameraCaptureButton(child);
+            boolean found = findAndClickCameraCaptureButton(child, buttonText);
             if (found) return true;
         }
         return false;

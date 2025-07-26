@@ -7,6 +7,8 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraAccessException;
 import android.util.Log;
+
+import com.mvp.sarah.AppUtils;
 import com.mvp.sarah.CommandHandler;
 import com.mvp.sarah.CommandRegistry;
 import com.mvp.sarah.FeedbackProvider;
@@ -37,6 +39,11 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
                lowerCmd.contains("click picture") ||
                lowerCmd.contains("capture photo") ||
                lowerCmd.contains("capture picture") ||
+               lowerCmd.contains("take selfie") ||
+               lowerCmd.contains("selfie") ||
+               // Check for timer-based photo commands
+               (lowerCmd.contains("photo") && (lowerCmd.contains("in") || lowerCmd.contains("after") || lowerCmd.contains("timer"))) ||
+               (lowerCmd.contains("selfie") && (lowerCmd.contains("in") || lowerCmd.contains("after") || lowerCmd.contains("timer"))) ||
                // Add more specific patterns to ensure we catch camera-related commands
                (lowerCmd.contains("camera") && (lowerCmd.contains("switch") || lowerCmd.contains("change") || lowerCmd.contains("flip")));
         
@@ -55,7 +62,24 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
             return;
         }
         
-        if (lowerCmd.contains("take photo") || lowerCmd.contains("take picture") || 
+        // Check for timer-based photo commands first
+        if ((lowerCmd.contains("photo") || lowerCmd.contains("selfie")) && 
+            (lowerCmd.contains("in") || lowerCmd.contains("after") || lowerCmd.contains("timer"))) {
+            int seconds = extractSecondsFromCommand(command);
+            if (seconds > 0) {
+                if (lowerCmd.contains("selfie")) {
+                    takeSelfieWithTimer(context, seconds);
+                } else {
+                    takePhotoWithTimer(context, seconds);
+                }
+                return;
+            }
+        }
+        
+        if (lowerCmd.contains("take selfie") || lowerCmd.contains("selfie")) {
+            // Take selfie - open camera, switch to front camera, then take photo
+            takeSelfie(context);
+        } else if (lowerCmd.contains("take photo") || lowerCmd.contains("take picture") || 
             lowerCmd.contains("click photo") || lowerCmd.contains("click picture") ||
             lowerCmd.contains("capture photo") || lowerCmd.contains("capture picture")) {
             // Open camera and take photo automatically
@@ -71,42 +95,71 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
         }
     }
     
-    private void takePhoto(Context context) {
+        private void takePhoto(Context context) {
         Log.d(TAG, "takePhoto called");
         FeedbackProvider.speakAndToast(context, "Opening camera and taking photo.");
-        
-        try {
-            // Open the default camera app directly
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.setPackage("com.motorola.camera3"); // Default Motorola camera
-            
-            context.startActivity(intent);
-            
-            // Wait for camera to load, then trigger photo capture
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
-                context.sendBroadcast(captureIntent);
-            }, 3000); // Wait 3 seconds for camera to load
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening camera app: " + e.getMessage());
-            // Fallback to generic camera intent
+
+        // Find camera app dynamically using shared utility
+        String cameraPackage = AppUtils.findCameraAppPackage(context);
+        if (cameraPackage != null) {
             try {
-                Intent fallbackIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(fallbackIntent);
-                
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setPackage(cameraPackage);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                context.startActivity(intent);
+
                 // Wait for camera to load, then trigger photo capture
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                     Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
                     context.sendBroadcast(captureIntent);
-                }, 3000);
-                
-            } catch (Exception fallbackError) {
-                Log.e(TAG, "Fallback camera also failed: " + fallbackError.getMessage());
-                FeedbackProvider.speakAndToast(context, "Could not open camera app.");
+                }, 3000); // Wait 3 seconds for camera to load
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error opening camera app: " + cameraPackage, e);
+                FeedbackProvider.speakAndToast(context, "Could not open camera app");
             }
+        } else {
+            FeedbackProvider.speakAndToast(context, "No camera app found on device");
+        }
+    }
+
+    private void takeSelfie(Context context) {
+        Log.d(TAG, "takeSelfie called");
+        FeedbackProvider.speakAndToast(context, "Opening camera and taking selfie.");
+
+        // Find camera app dynamically using shared utility
+        String cameraPackage = AppUtils.findCameraAppPackage(context);
+        if (cameraPackage != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setPackage(cameraPackage);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                context.startActivity(intent);
+
+                // Wait for camera to load, then switch to front camera
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    // First switch to front camera
+                    Intent switchIntent = new Intent("com.mvp.sarah.ACTION_SWITCH_CAMERA");
+                    context.sendBroadcast(switchIntent);
+                    
+                    // Wait a bit more for camera switch to complete, then take photo
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
+                        context.sendBroadcast(captureIntent);
+                    }, 2000); // Wait 2 seconds after switching camera
+                    
+                }, 3000); // Wait 3 seconds for camera to load
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error opening camera app: " + cameraPackage, e);
+                FeedbackProvider.speakAndToast(context, "Could not open camera app");
+            }
+        } else {
+            FeedbackProvider.speakAndToast(context, "No camera app found on device");
         }
     }
     
@@ -233,7 +286,13 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
             "click photo",
             "click picture",
             "capture photo",
-            "capture picture"
+            "capture picture",
+            "take selfie",
+            "selfie",
+            "take photo in 5 seconds",
+            "selfie after 10 seconds",
+            "photo timer 3",
+            "selfie in 7 seconds"
         );
     }
 
@@ -246,5 +305,137 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
 
     public static boolean isLearningSwitchButton() {
         return learningSwitchButton;
+    }
+    
+    /**
+     * Extract number of seconds from timer-based commands
+     * Examples: "take photo in 5 seconds" -> returns 5
+     *          "selfie after 10 seconds" -> returns 10
+     *          "photo timer 3" -> returns 3
+     */
+    private int extractSecondsFromCommand(String command) {
+        String lowerCmd = command.toLowerCase(Locale.ROOT);
+        
+        // Look for patterns like "in X seconds", "after X seconds", "timer X"
+        String[] patterns = {
+            "in (\\d+) seconds?",
+            "after (\\d+) seconds?",
+            "timer (\\d+)",
+            "in (\\d+) sec",
+            "after (\\d+) sec",
+            "(\\d+) seconds?",
+            "(\\d+) sec"
+        };
+        
+        for (String pattern : patterns) {
+            java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher matcher = regex.matcher(lowerCmd);
+            if (matcher.find()) {
+                try {
+                    int seconds = Integer.parseInt(matcher.group(1));
+                    Log.d(TAG, "Extracted " + seconds + " seconds from command: " + command);
+                    return seconds;
+                } catch (NumberFormatException e) {
+                    Log.w(TAG, "Failed to parse seconds from: " + matcher.group(1));
+                }
+            }
+        }
+        
+        Log.w(TAG, "No seconds found in command: " + command);
+        return 0;
+    }
+
+    private void takePhotoWithTimer(Context context, int seconds) {
+        Log.d(TAG, "takePhotoWithTimer called with " + seconds + " seconds");
+        FeedbackProvider.speakAndToast(context, "Taking photo in " + seconds + " seconds.");
+
+        // Find camera app dynamically using shared utility
+        String cameraPackage = AppUtils.findCameraAppPackage(context);
+        if (cameraPackage != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setPackage(cameraPackage);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                context.startActivity(intent);
+
+                // Wait for camera to load, then start countdown
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    startPhotoCountdown(context, seconds, false);
+                }, 3000); // Wait 3 seconds for camera to load
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error opening camera app: " + cameraPackage, e);
+                FeedbackProvider.speakAndToast(context, "Could not open camera app");
+            }
+        } else {
+            FeedbackProvider.speakAndToast(context, "No camera app found on device");
+        }
+    }
+
+    private void takeSelfieWithTimer(Context context, int seconds) {
+        Log.d(TAG, "takeSelfieWithTimer called with " + seconds + " seconds");
+        FeedbackProvider.speakAndToast(context, "Taking selfie in " + seconds + " seconds.");
+
+        // Find camera app dynamically using shared utility
+        String cameraPackage = AppUtils.findCameraAppPackage(context);
+        if (cameraPackage != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setPackage(cameraPackage);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                context.startActivity(intent);
+
+                // Wait for camera to load, then switch to front camera and start countdown
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    // First switch to front camera
+                    Intent switchIntent = new Intent("com.mvp.sarah.ACTION_SWITCH_CAMERA");
+                    context.sendBroadcast(switchIntent);
+                    
+                    // Wait a bit more for camera switch to complete, then start countdown
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        startPhotoCountdown(context, seconds, true);
+                    }, 2000); // Wait 2 seconds after switching camera
+                    
+                }, 3000); // Wait 3 seconds for camera to load
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error opening camera app: " + cameraPackage, e);
+                FeedbackProvider.speakAndToast(context, "Could not open camera app");
+            }
+        } else {
+            FeedbackProvider.speakAndToast(context, "No camera app found on device");
+        }
+    }
+
+    private void startPhotoCountdown(Context context, int totalSeconds, boolean isSelfie) {
+        Log.d(TAG, "Starting photo countdown: " + totalSeconds + " seconds, selfie: " + isSelfie);
+        
+        // Start countdown from totalSeconds down to 1
+        for (int i = totalSeconds; i > 0; i--) {
+            final int currentSecond = i;
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (currentSecond > 3) {
+                    // For longer countdowns, only announce at 5, 3, 2, 1
+                    if (currentSecond == 5 || currentSecond <= 3) {
+                        FeedbackProvider.speakAndToast(context, currentSecond + "");
+                    }
+                } else {
+                    // For shorter countdowns, announce every second
+                    FeedbackProvider.speakAndToast(context, currentSecond + "");
+                }
+            }, (totalSeconds - currentSecond) * 1000L);
+        }
+        
+        // Take photo after countdown completes
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            FeedbackProvider.speakAndToast(context, "Taking " + (isSelfie ? "selfie" : "photo") + " now!");
+            // Send a direct capture intent without reopening camera
+            Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_ONLY");
+            context.sendBroadcast(captureIntent);
+        }, totalSeconds * 1000L);
     }
 } 

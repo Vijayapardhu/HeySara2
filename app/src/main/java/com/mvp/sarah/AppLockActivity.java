@@ -291,6 +291,11 @@ public class AppLockActivity extends Activity {
                 }
             }
             if (frontCameraId == null) return;
+
+            if (checkSelfPermission(android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
             cameraManager.openCamera(frontCameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(CameraDevice camera) {
