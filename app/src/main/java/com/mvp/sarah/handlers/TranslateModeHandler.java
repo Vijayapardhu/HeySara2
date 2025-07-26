@@ -73,7 +73,13 @@ public class TranslateModeHandler implements CommandHandler, CommandRegistry.Sug
                 }
                 // Use existing TranslateHandler logic if available, or implement translation here
                 FeedbackProvider.speakAndToast(context, "Translating to " + lang + "...");
-                // TODO: Call translation API or handler
+                // Call translation handler - using correct method signature
+                try {
+                    TranslateHandler translateHandler = new TranslateHandler();
+                    translateHandler.handle(context, "translate '" + text + "' to " + lang);
+                } catch (Exception e) {
+                    FeedbackProvider.speakAndToast(context, "Translation service unavailable");
+                }
             })
             .setNegativeButton("Cancel", null)
             .show();

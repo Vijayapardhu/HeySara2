@@ -39,7 +39,7 @@ public class CallDetectionService extends Service {
         // Pause SaraVoiceService's wake word detection and TTS
         Log.d(TAG, "Pausing audio services (SaraVoiceService and TTS)");
         // Tell SaraVoiceService to stop listening and pause TTS
-        Intent intent = new Intent("com.mvp.sarah.ACTION_STOP_CALL_LISTENING").setPackage(/* TODO: provide the application ID. For example: */ getPackageName());
+        Intent intent = new Intent("com.mvp.sarah.ACTION_STOP_CALL_LISTENING").setPackage(getPackageName());
         sendBroadcast(intent);
         // Optionally, stop TTS if needed
         try {
@@ -52,7 +52,7 @@ public class CallDetectionService extends Service {
     private void resumeAudioServices() {
         // Resume SaraVoiceService's wake word detection
         Log.d(TAG, "Resuming audio services (SaraVoiceService)");
-        Intent intent = new Intent("com.mvp.sarah.ACTION_START_CALL_LISTENING").setPackage(/* TODO: provide the application ID. For example: */ getPackageName());
+        Intent intent = new Intent("com.mvp.sarah.ACTION_START_CALL_LISTENING").setPackage(getPackageName());
         sendBroadcast(intent);
         // Optionally, re-initialize TTS if needed (will auto-init on next speak)
     }
@@ -72,7 +72,7 @@ public class CallDetectionService extends Service {
                         // Call was answered
                         isCallAnnounced = false;
                         // Send broadcast to notify call was answered, include phone number
-                        Intent answeredIntent = new Intent("com.mvp.sarah.CALL_ANSWERED").setPackage(/* TODO: provide the application ID. For example: */ getPackageName());
+                        Intent answeredIntent = new Intent("com.mvp.sarah.CALL_ANSWERED").setPackage(getPackageName());
                         if (phoneNumber != null) {
                             answeredIntent.putExtra("phone_number", phoneNumber);
                         }
