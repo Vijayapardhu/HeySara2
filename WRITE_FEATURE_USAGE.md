@@ -95,7 +95,7 @@ For the WriteHandler to work, you need to configure the OpenRouter API key in Fi
    Collection: config
    Document: openrouter
    Fields:
-     - api_key: "sk-or-v1-your-actual-openrouter-api-key-here"
+     - api_key: "your-actual-openrouter-api-key-here"
    ```
 
 ### Privacy Note
