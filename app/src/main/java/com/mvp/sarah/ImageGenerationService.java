@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ImageGenerationService extends IntentService {
 
@@ -16,35 +17,64 @@ public class ImageGenerationService extends IntentService {
         super("ImageGenerationService");
     }
 
+    private String apiKey = null;
+    private boolean isFetchingKey = false;
+    private final Object keyLock = new Object();
+
+    private void fetchApiKey(Runnable onReady) {
+        synchronized (keyLock) {
+            if (apiKey != null) {
+                onReady.run();
+                return;
+            }
+            if (isFetchingKey) return;
+            isFetchingKey = true;
+        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("app_config").document("gemini").get()
+            .addOnSuccessListener(document -> {
+                if (document.exists() && document.contains("api_key")) {
+                    apiKey = document.getString("api_key");
+                }
+                synchronized (keyLock) { isFetchingKey = false; }
+                onReady.run();
+            })
+            .addOnFailureListener(e -> {
+                synchronized (keyLock) { isFetchingKey = false; }
+                onReady.run();
+            });
+    }
+
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         if (intent == null) return;
         String prompt = intent.getStringExtra("prompt");
-        String apiKey = BuildConfig.GEMINI_API_KEY;
-        try {
-            JSONArray predictions = ImagenHelper.generateImages(prompt, 1, apiKey);
-            JSONObject prediction = predictions.getJSONObject(0);
-            String imageUrl = prediction.optString("imageUrl", null);
-            String base64Image = prediction.optString("image", null);
+        fetchApiKey(() -> {
+            try {
+                JSONArray predictions = ImagenHelper.generateImages(prompt, 1, apiKey);
+                JSONObject prediction = predictions.getJSONObject(0);
+                String imageUrl = prediction.optString("imageUrl", null);
+                String base64Image = prediction.optString("image", null);
 
-            File imageFile = new File(getFilesDir(), "generated_image.jpg");
-            if (imageUrl != null) {
-                downloadImage(imageUrl, imageFile);
-            } else if (base64Image != null) {
-                byte[] imageBytes = android.util.Base64.decode(base64Image, android.util.Base64.DEFAULT);
-                try (FileOutputStream fos = new FileOutputStream(imageFile)) {
-                    fos.write(imageBytes);
+                File imageFile = new File(getFilesDir(), "generated_image.jpg");
+                if (imageUrl != null) {
+                    downloadImage(imageUrl, imageFile);
+                } else if (base64Image != null) {
+                    byte[] imageBytes = android.util.Base64.decode(base64Image, android.util.Base64.DEFAULT);
+                    try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+                        fos.write(imageBytes);
+                    }
                 }
+
+                Intent displayIntent = new Intent(this, ImageDisplayActivity.class);
+                displayIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                displayIntent.setData(Uri.fromFile(imageFile));
+                startActivity(displayIntent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            Intent displayIntent = new Intent(this, ImageDisplayActivity.class);
-            displayIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            displayIntent.setData(Uri.fromFile(imageFile));
-            startActivity(displayIntent);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     private void downloadImage(String imageUrl, File destFile) throws IOException {

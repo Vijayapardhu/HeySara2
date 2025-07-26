@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#2196F3</color>
-    <color name="primary_dark">#1976D2</color>
-    <color name="accent">#FF4081</color>
+    <color name="primary">#FF9900</color>
+    <color name="primary_dark">#CC7A00</color>
+    <color name="accent">#FF9900</color>
     <color name="background">#FFFFFF</color>
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
@@ -14,8 +14,8 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="alarm_background_start">#001F3F</color>
-    <color name="alarm_background_end">#000B18</color>
+    <color name="alarm_background_start">#FF9900</color>
+    <color name="alarm_background_end">#FFFFFF</color>
     <color name="alarm_text_primary">#FFFFFF</color>
     <color name="alarm_text_secondary">#B3FFFFFF</color>
     <color name="alarm_button_dismiss">#FF3B30</color>

@@ -67,7 +67,7 @@ import java.util.Arrays;
 public class ClickAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "ClickAccessibilitySvc";
-    
+
     // Camera node info class for caching
     private static class CameraNodeInfo implements Serializable {
         private static final long serialVersionUID = 1L;
@@ -81,10 +81,10 @@ public class ClickAccessibilityService extends AccessibilityService {
         public final int nodeWidth;
         public final int nodeHeight;
         public final long timestamp;
-        
-        public CameraNodeInfo(String packageName, String nodeText, String nodeDescription, 
-                            String nodeResourceId, String nodeClassName, 
-                            int nodeX, int nodeY, int nodeWidth, int nodeHeight) {
+
+        public CameraNodeInfo(String packageName, String nodeText, String nodeDescription,
+                              String nodeResourceId, String nodeClassName,
+                              int nodeX, int nodeY, int nodeWidth, int nodeHeight) {
             this.packageName = packageName;
             this.nodeText = nodeText;
             this.nodeDescription = nodeDescription;
@@ -96,11 +96,11 @@ public class ClickAccessibilityService extends AccessibilityService {
             this.nodeHeight = nodeHeight;
             this.timestamp = System.currentTimeMillis();
         }
-        
+
         public boolean isExpired() {
             return System.currentTimeMillis() - timestamp > CAMERA_CACHE_TIMEOUT_MS;
         }
-        
+
         @Override
         public String toString() {
             return "CameraNodeInfo{" +
@@ -239,7 +239,7 @@ public class ClickAccessibilityService extends AccessibilityService {
     private static final long ATTEMPT_RESET_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
     private String lastPackageName = null;
     private long lastAppSwitchTime = 0;
-    
+
     // Camera node caching for reliable camera switching
     private static final Map<String, CameraNodeInfo> cachedCameraNodes = new ConcurrentHashMap<>();
     private static final long CAMERA_CACHE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -248,17 +248,17 @@ public class ClickAccessibilityService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         Log.d(TAG, "ClickAccessibilityService connected");
-        
+
         // Configure the accessibility service
         AccessibilityServiceInfo info = new AccessibilityServiceInfo();
-        info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED | 
-                         AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED |
-                         AccessibilityEvent.TYPE_VIEW_CLICKED;
+        info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED |
+                AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED |
+                AccessibilityEvent.TYPE_VIEW_CLICKED;
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
-        info.flags = AccessibilityServiceInfo.DEFAULT | 
-                    AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS | 
-                    AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
-                    IntentFilter filter = new IntentFilter();
+        info.flags = AccessibilityServiceInfo.DEFAULT |
+                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS |
+                AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
+        IntentFilter filter = new IntentFilter();
         filter.addAction("com.mvp.sarah.ACTION_CLICK_POINT");
         filter.addAction("com.mvp.sarah.ACTION_TYPE_TEXT");
         filter.addAction("com.mvp.sarah.ACTION_SUBMIT");
@@ -352,12 +352,12 @@ public class ClickAccessibilityService extends AccessibilityService {
             // Partial text match
             clicked = findAndClickPartialText(rootNode, text.toLowerCase(Locale.ROOT));
             // Content description match
-        if (!clicked) {
-            clicked = findAndClickByContentDescription(rootNode, text.toLowerCase(Locale.ROOT));
-        }
+            if (!clicked) {
+                clicked = findAndClickByContentDescription(rootNode, text.toLowerCase(Locale.ROOT));
+            }
             // Class name heuristics
-        if (!clicked) {
-            clicked = findAndClickByClassName(rootNode, "Button");
+            if (!clicked) {
+                clicked = findAndClickByClassName(rootNode, "Button");
             }
         }
 
@@ -595,233 +595,60 @@ public class ClickAccessibilityService extends AccessibilityService {
     }
 
     private void switchCamera() {
-        Log.d(TAG, "switchCamera called");
-        FeedbackProvider.speakAndToast(this, "Looking for camera switch button");
-        
-        // First try to find the camera switch button using accessibility
+        Log.d(TAG, "switchCamera called - looking for 'switch' label");
+        // FeedbackProvider.speakAndToast(this, "Looking for camera switch button"); // Removed as requested
+
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode != null) {
-            Log.d(TAG, "Root node found, searching for camera switch button");
+            Log.d(TAG, "Root node found, searching for 'switch' label");
             boolean switched = findAndClickCameraSwitchButton(rootNode);
             if (switched) {
-                Log.d(TAG, "Found camera switch button using accessibility, clicked it");
+                Log.d(TAG, "Found and clicked camera switch button with 'switch' label");
                 rootNode.recycle();
-                FeedbackProvider.speakAndToast(this, "Camera switched successfully");
+                FeedbackProvider.speakAndToast(this, "Camera Changed");
                 return;
             } else {
-                Log.d(TAG, "No camera switch button found using accessibility");
+                Log.d(TAG, "No 'switch' label found in camera interface");
+                // FeedbackProvider.speakAndToast(this, "Could not find camera switch button"); // Removed as requested
             }
             rootNode.recycle();
         } else {
             Log.d(TAG, "Root node is null, cannot search for camera switch button");
-        }
-        
-        // Try multiple attempts with different strategies
-        attemptCameraSwitch(1);
-    }
-    
-    private void attemptCameraSwitch(int attempt) {
-        Log.d(TAG, "Attempting camera switch, attempt " + attempt);
-        
-        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode != null) {
-            // Try accessibility-based detection
-            boolean switched = findAndClickCameraSwitchButton(rootNode);
-            if (switched) {
-                Log.d(TAG, "Found camera switch button on attempt " + attempt);
-                rootNode.recycle();
-                FeedbackProvider.speakAndToast(this, "Camera switched successfully");
-                return;
-            }
-            
-            // Try fallback position-based method
-            if (attempt == 1) {
-                Log.d(TAG, "Trying fallback position method");
-        performFallbackCameraSwitch();
-                
-                // Wait a bit and try again
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    attemptCameraSwitch(attempt + 1);
-                }, 1000);
-            } else if (attempt < 3) {
-                // Try different positions
-                Log.d(TAG, "Trying alternative positions");
-                performAlternativeCameraSwitch();
-                
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    attemptCameraSwitch(attempt + 1);
-                }, 1000);
-            } else {
-                Log.w(TAG, "Could not switch camera after multiple attempts");
-                // Dump the accessibility tree for debugging
-                AccessibilityNodeInfo debugRoot = getRootInActiveWindow();
-                if (debugRoot != null) {
-                    Log.d(TAG, "Dumping accessibility tree for debugging:");
-                    dumpAccessibilityTree(debugRoot, 0);
-                    debugRoot.recycle();
-                }
-                FeedbackProvider.speakAndToast(this, "Could not find camera switch button");
-            }
-            
-            rootNode.recycle();
-        } else {
-            Log.e(TAG, "Could not access camera interface on attempt " + attempt);
-            
-            if (attempt < 3) {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    attemptCameraSwitch(attempt + 1);
-                }, 1000);
-            }
+            FeedbackProvider.speakAndToast(this, "Cannot access camera interface");
         }
     }
-    
-    private void performFallbackCameraSwitch() {
-        // Get screen dimensions to calculate relative position
-        android.util.DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int screenWidth = displayMetrics.widthPixels;
-        int screenHeight = displayMetrics.heightPixels;
 
-        // Common camera switch button positions
-        // Position 1: Bottom-right corner (most common)
-        int x1 = (int) (screenWidth * 0.88f);
-        int y1 = (int) (screenHeight * 0.93f);
 
-        Log.d(TAG, "Screen dimensions: " + screenWidth + "x" + screenHeight);
-        Log.d(TAG, "Tapping camera switch button at position 1: (" + x1 + ", " + y1 + ")");
 
-        performTapAtPosition(x1, y1);
-        FeedbackProvider.speakAndToast(this, "Switching camera.");
-    }
-    
-    private void performAlternativeCameraSwitch() {
-        // Get screen dimensions
-        android.util.DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int screenWidth = displayMetrics.widthPixels;
-        int screenHeight = displayMetrics.heightPixels;
-
-        // Try different common camera switch button positions
-        int[][] positions = {
-            {(int) (screenWidth * 0.85f), (int) (screenHeight * 0.90f)},  // Bottom-right
-            {(int) (screenWidth * 0.92f), (int) (screenHeight * 0.95f)},  // More right
-            {(int) (screenWidth * 0.80f), (int) (screenHeight * 0.88f)},  // Less right
-            {(int) (screenWidth * 0.15f), (int) (screenHeight * 0.90f)},  // Bottom-left
-            {(int) (screenWidth * 0.50f), (int) (screenHeight * 0.10f)},  // Top-center
-            {(int) (screenWidth * 0.90f), (int) (screenHeight * 0.15f)},  // Top-right
-            {(int) (screenWidth * 0.75f), (int) (screenHeight * 0.20f)},  // Upper-right
-            {(int) (screenWidth * 0.10f), (int) (screenHeight * 0.15f)},  // Top-left
-            {(int) (screenWidth * 0.50f), (int) (screenHeight * 0.85f)},  // Bottom-center
-        };
-
-        // Try multiple positions in sequence
-        for (int i = 0; i < positions.length; i++) {
-            final int x = positions[i][0];
-            final int y = positions[i][1];
-            
-            Log.d(TAG, "Trying camera switch position " + (i + 1) + ": (" + x + ", " + y + ")");
-            
-            // Delay each attempt slightly
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                performTapAtPosition(x, y);
-                Log.d(TAG, "Tapped at position: (" + x + ", " + y + ")");
-            }, i * 200); // 200ms delay between attempts
-        }
-        
-        FeedbackProvider.speakAndToast(this, "Trying multiple camera switch positions.");
-    }
-    
-    private AccessibilityNodeInfo findCameraSwitchButton(AccessibilityNodeInfo node) {
-        if (node == null) return null;
-        
-        // Log all clickable nodes for debugging
-        if (node.isClickable()) {
-            CharSequence text = node.getText();
-            String resourceId = node.getViewIdResourceName();
-            CharSequence contentDesc = node.getContentDescription();
-            Log.d(TAG, "Found clickable node - Text: '" + text + "', ResourceID: '" + resourceId + "', ContentDesc: '" + contentDesc + "'");
-        }
-        
-        // Try to find by text content (more specific patterns)
+    private boolean findAndClickCameraSwitchButton(AccessibilityNodeInfo node) {
+        if (node == null) return false;
         CharSequence text = node.getText();
-        if (text != null) {
-            String lowerText = text.toString().toLowerCase();
-            Log.d(TAG, "Checking text: '" + text + "' (lowercase: '" + lowerText + "')");
-            
-            if (lowerText.contains("switch") || lowerText.contains("camera") || 
-                lowerText.contains("flip") || lowerText.contains("front") || 
-                lowerText.contains("back") || lowerText.contains("switch camera") ||
-                lowerText.contains("camera switch") || lowerText.contains("flip camera") ||
-                lowerText.contains("camera flip") || lowerText.equals("switch") ||
-                lowerText.equals("flip") || lowerText.equals("camera")) {
-                if (node.isClickable()) {
-                    Log.d(TAG, "Found camera switch button by text: '" + text + "'");
-                    return AccessibilityNodeInfo.obtain(node);
-                }
-            }
-        }
-        
-        // Try to find by resource ID (more specific patterns)
+        CharSequence desc = node.getContentDescription();
         String resourceId = node.getViewIdResourceName();
-        if (resourceId != null) {
-            String lowerResourceId = resourceId.toLowerCase();
-            Log.d(TAG, "Checking resource ID: '" + resourceId + "' (lowercase: '" + lowerResourceId + "')");
-            
-            if (lowerResourceId.contains("switch") || 
-                lowerResourceId.contains("camera") ||
-                lowerResourceId.contains("flip") ||
-                lowerResourceId.contains("switch_camera") ||
-                lowerResourceId.contains("camera_switch") ||
-                lowerResourceId.contains("flip_camera") ||
-                lowerResourceId.contains("camera_flip") ||
-                lowerResourceId.contains("switchcamera") ||
-                lowerResourceId.contains("camerabutton") ||
-                lowerResourceId.contains("flipbutton")) {
-                if (node.isClickable()) {
-                    Log.d(TAG, "Found camera switch button by resource ID: '" + resourceId + "'");
-                    return AccessibilityNodeInfo.obtain(node);
-                }
+
+        if (node.isClickable() && node.isVisibleToUser()) {
+            // Specifically look for "switch" label
+            if ((text != null && text.toString().toLowerCase().equals("switch")) ||
+                    (desc != null && desc.toString().toLowerCase().equals("switch")) ||
+                    (resourceId != null && resourceId.toLowerCase().contains("switch"))) {
+                Log.d(TAG, "Found camera switch button with 'switch' label: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "'");
+                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                return true;
             }
         }
-        
-        // Try to find by content description
-        CharSequence contentDesc = node.getContentDescription();
-        if (contentDesc != null) {
-            String lowerContentDesc = contentDesc.toString().toLowerCase();
-            Log.d(TAG, "Checking content description: '" + contentDesc + "' (lowercase: '" + lowerContentDesc + "')");
-            
-            if (lowerContentDesc.contains("switch") || 
-                lowerContentDesc.contains("camera") ||
-                lowerContentDesc.contains("flip") ||
-                lowerContentDesc.contains("switch camera") ||
-                lowerContentDesc.contains("camera switch") ||
-                lowerContentDesc.contains("flip camera") ||
-                lowerContentDesc.contains("camera flip")) {
-                if (node.isClickable()) {
-                    Log.d(TAG, "Found camera switch button by content description: '" + contentDesc + "'");
-                    return AccessibilityNodeInfo.obtain(node);
-                }
-            }
-        }
-        
+
         // Recursively search children
         for (int i = 0; i < node.getChildCount(); i++) {
-            @SuppressWarnings("unchecked")
             AccessibilityNodeInfo child = node.getChild(i);
-            if (child != null) {
-                AccessibilityNodeInfo result = findCameraSwitchButton(child);
-                if (result != null) {
-                    child.recycle();
-                    return result;
-                }
-                child.recycle();
-            }
+            boolean found = findAndClickCameraSwitchButton(child);
+            if (found) return true;
         }
-        
-        return null;
+        return false;
     }
 
     private void performTapAtPosition(int x, int y) {
         Log.d(TAG, "performTapAtPosition called at (" + x + ", " + y + ")");
-        
+
         Path clickPath = new Path();
         clickPath.moveTo(x, y);
 
@@ -838,13 +665,13 @@ public class ClickAccessibilityService extends AccessibilityService {
             public void onCompleted(GestureDescription gestureDescription) {
                 Log.d(TAG, "Camera switch tap completed successfully");
             }
-            
+
             @Override
             public void onCancelled(GestureDescription gestureDescription) {
                 Log.e(TAG, "Camera switch tap was cancelled");
             }
         }, null);
-        
+
         Log.d(TAG, "dispatchGesture result: " + result);
     }
 
@@ -864,7 +691,7 @@ public class ClickAccessibilityService extends AccessibilityService {
             FeedbackProvider.speakAndToast(this, "Unable to answer call.");
         }
     }
-    
+
     private void rejectCall() {
         Log.d(TAG, "rejectCall called");
         TelecomManager telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
@@ -983,7 +810,7 @@ public class ClickAccessibilityService extends AccessibilityService {
 
     private void performWhatsAppSend(String contactName, String message) {
         Log.d(TAG, "Performing WhatsApp send for: " + contactName);
-        
+
         // Wait a bit for WhatsApp to open and load
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             // Look for the send button in WhatsApp
@@ -995,7 +822,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                     Log.d(TAG, "Found WhatsApp send button, clicking it");
                     sendButton.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                     sendButton.recycle();
-                    
+
                     // Wait a bit more and then close WhatsApp
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
                         performBackAction();
@@ -1010,81 +837,81 @@ public class ClickAccessibilityService extends AccessibilityService {
             }
         }, 2000); // Wait 2 seconds for WhatsApp to load
     }
-    
+
     private void performFallbackWhatsAppSend(String contactName) {
         Log.d(TAG, "Using fallback method to click send button");
-        
+
         // Get screen dimensions
         android.util.DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         int screenWidth = displayMetrics.widthPixels;
         int screenHeight = displayMetrics.heightPixels;
-        
+
         // Calculate position: send button is typically at the bottom-right area
         // Documents button is usually at the bottom, so we click 1cm to the right
         int clickX = screenWidth - 100; // 100px from right edge (approximately 1cm)
         int clickY = screenHeight - 150; // 150px from bottom edge
-        
+
         Log.d(TAG, "Clicking at position: (" + clickX + ", " + clickY + ")");
-        
+
         // Perform tap gesture at the calculated position
         performTapGesture(clickX, clickY);
-        
+
         // Wait a bit more and then close WhatsApp
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             performBackAction();
             FeedbackProvider.speakAndToast(this, "WhatsApp message sent to " + contactName);
         }, 1000);
     }
-    
+
     private AccessibilityNodeInfo findWhatsAppSendButton(AccessibilityNodeInfo node) {
         if (node == null) return null;
-        
+
         // Try to find by text content (more specific WhatsApp send button texts)
         CharSequence text = node.getText();
         if (text != null) {
             String lowerText = text.toString().toLowerCase();
-            if (lowerText.equals("send") || lowerText.equals("enviar") || 
-                lowerText.equals("→") || lowerText.equals("▶") || 
-                lowerText.equals("send") || lowerText.equals("send") ||
-                lowerText.contains("send") || lowerText.contains("enviar")) {
+            if (lowerText.equals("send") || lowerText.equals("enviar") ||
+                    lowerText.equals("→") || lowerText.equals("▶") ||
+                    lowerText.equals("send") || lowerText.equals("send") ||
+                    lowerText.contains("send") || lowerText.contains("enviar")) {
                 if (node.isClickable()) {
                     Log.d(TAG, "Found send button by text: " + text);
                     return AccessibilityNodeInfo.obtain(node);
                 }
             }
         }
-        
+
         // Try to find by resource ID (more specific WhatsApp send button IDs)
         String resourceId = node.getViewIdResourceName();
         if (resourceId != null) {
             String lowerResourceId = resourceId.toLowerCase();
-            if (lowerResourceId.contains("send") || 
-                lowerResourceId.contains("send_button") ||
-                lowerResourceId.contains("sendbutton") ||
-                lowerResourceId.contains("fab_send") ||
-                lowerResourceId.contains("send_fab") ||
-                lowerResourceId.contains("com.whatsapp:id/send")) {
+            if (lowerResourceId.contains("send") ||
+                    lowerResourceId.contains("send_button") ||
+                    lowerResourceId.contains("sendbutton") ||
+                    lowerResourceId.contains("fab_send") ||
+                    lowerResourceId.contains("send_fab") ||
+                    lowerResourceId.contains("com.whatsapp:id/send")) {
                 if (node.isClickable()) {
                     Log.d(TAG, "Found send button by resource ID: " + resourceId);
                     return AccessibilityNodeInfo.obtain(node);
                 }
             }
         }
-        
+
         // Try to find by content description
         CharSequence contentDesc = node.getContentDescription();
         if (contentDesc != null) {
             String lowerContentDesc = contentDesc.toString().toLowerCase();
-            if (lowerContentDesc.contains("send") || 
-                lowerContentDesc.contains("enviar") ||
-                lowerContentDesc.contains("send message")) {
+            if (lowerContentDesc.contains("send") ||
+                    lowerContentDesc.contains("enviar") ||
+                    lowerContentDesc.contains("send message")) {
                 if (node.isClickable()) {
                     Log.d(TAG, "Found send button by content description: " + contentDesc);
                     return AccessibilityNodeInfo.obtain(node);
                 }
             }
         }
-        
+
         // Recursively search children
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
@@ -1097,10 +924,10 @@ public class ClickAccessibilityService extends AccessibilityService {
                 child.recycle();
             }
         }
-        
+
         return null;
     }
-    
+
     private void performBackAction() {
         // Perform back action to close WhatsApp
         performGlobalAction(GLOBAL_ACTION_BACK);
@@ -1228,7 +1055,7 @@ public class ClickAccessibilityService extends AccessibilityService {
         if (node == null) return null;
         String lowerKeyword = keyword.toLowerCase();
         if ((node.getContentDescription() != null && node.getContentDescription().toString().toLowerCase().contains(lowerKeyword)) ||
-            (node.getText() != null && node.getText().toString().toLowerCase().contains(lowerKeyword))) {
+                (node.getText() != null && node.getText().toString().toLowerCase().contains(lowerKeyword))) {
             return AccessibilityNodeInfo.obtain(node);
         }
         for (int i = 0; i < node.getChildCount(); i++) {
@@ -1316,7 +1143,7 @@ public class ClickAccessibilityService extends AccessibilityService {
             String packageName = String.valueOf(event.getPackageName());
             SharedPreferences prefs = getSharedPreferences("AppLockPrefs", MODE_PRIVATE);
             Set<String> lockedApps = new HashSet<>(prefs.getStringSet("locked_apps", new HashSet<>()));
-            
+
             // Enhanced app switching logic
             long currentTime = System.currentTimeMillis();
             if (lastPackageName != null && !lastPackageName.equals(packageName)) {
@@ -1325,15 +1152,8 @@ public class ClickAccessibilityService extends AccessibilityService {
             }
             lastPackageName = packageName;
             lastAppSwitchTime = currentTime;
-            
+
             // Check if this is a camera app and cache camera switch button
-            if (isCameraApp(packageName)) {
-                Log.d(TAG, "Camera app detected: " + packageName + ", caching camera switch button");
-                // Delay caching to allow camera UI to fully load
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    cacheCameraSwitchButton();
-                }, 2000); // Wait 2 seconds for camera to fully load
-            }
             
             // Enhanced app lock logic
             if (lockedApps.contains(packageName)) {
@@ -1341,7 +1161,7 @@ public class ClickAccessibilityService extends AccessibilityService {
             }
         }
     }
-    
+
     /**
      * Handle app switching with enhanced security
      */
@@ -1351,17 +1171,17 @@ public class ClickAccessibilityService extends AccessibilityService {
         if (previousUnlockTime != null) {
             long timeSinceUnlock = currentTime - previousUnlockTime;
             long timeout = isTrustedApp(previousPackage) ? UNLOCK_EXTENDED_TIMEOUT_MS : UNLOCK_TIMEOUT_MS;
-            
+
             if (timeSinceUnlock > timeout) {
                 unlockedLockedApps.remove(previousPackage);
                 Log.d(TAG, "App unlock expired on switch: " + previousPackage);
             }
         }
-        
+
         // Log app switch for security tracking
         Log.d(TAG, "App switch: " + previousPackage + " -> " + newPackage);
     }
-    
+
     /**
      * Enhanced locked app access handling
      */
@@ -1371,34 +1191,34 @@ public class ClickAccessibilityService extends AccessibilityService {
             Log.d(TAG, "App is unlocked: " + packageName);
             return;
         }
-        
+
         // Check if app is locked due to too many failed attempts
         if (isAppLockedDueToAttempts(packageName)) {
             Log.d(TAG, "App locked due to failed attempts: " + packageName);
             showLockedAppMessage(packageName, "Too many failed unlock attempts. Try again later.");
             return;
         }
-        
+
         // Check if AppLockActivity is already active
         if (AppLockActivity.isActive()) {
             Log.d(TAG, "AppLockActivity already active, skipping lock screen");
             return;
         }
-        
+
         // Launch lock screen
         Log.d(TAG, "Launching lock screen for: " + packageName);
-                        Intent lockIntent = new Intent(this, AppLockActivity.class);
-                        lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                        lockIntent.putExtra("locked_package", packageName);
-        
+        Intent lockIntent = new Intent(this, AppLockActivity.class);
+        lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        lockIntent.putExtra("locked_package", packageName);
+
         // Add additional security context
         lockIntent.putExtra("unlock_attempts", unlockAttempts.get(packageName));
         lockIntent.putExtra("remaining_time", getRemainingUnlockTime(packageName));
         lockIntent.putExtra("is_trusted_app", isTrustedApp(packageName));
-        
-                        startActivity(lockIntent);
-                    }
-    
+
+        startActivity(lockIntent);
+    }
+
     /**
      * Show message for locked app (alternative to lock screen)
      */
@@ -1517,92 +1337,92 @@ public class ClickAccessibilityService extends AccessibilityService {
     // Advanced Brand-Aware Toggle System
     private static final String[] BRANDS = {"samsung", "xiaomi", "huawei", "oneplus", "oppo", "vivo", "realme", "motorola", "lg", "sony", "google", "pixel"};
     private static final String[] LOCALES = {"en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko", "ar", "hi", "th", "vi"};
-    
+
     // Comprehensive keyword mappings for different toggles
     private static final String[][] WIFI_KEYWORDS = {
-        {"wifi", "wi-fi", "wireless", "internet", "network"},
-        {"wifi", "wi-fi", "inalámbrico", "internet", "red"},
-        {"wifi", "wi-fi", "sans fil", "internet", "réseau"},
-        {"wifi", "wi-fi", "drahtlos", "internet", "netzwerk"},
-        {"wifi", "wi-fi", "senza fili", "internet", "rete"},
-        {"wifi", "wi-fi", "sem fio", "internet", "rede"},
-        {"wifi", "wi-fi", "беспроводной", "интернет", "сеть"},
-        {"wifi", "wi-fi", "无线", "网络", "互联网"},
-        {"wifi", "wi-fi", "ワイファイ", "無線", "インターネット"},
-        {"wifi", "wi-fi", "와이파이", "무선", "인터넷"},
-        {"wifi", "wi-fi", "واي فاي", "لاسلكي", "إنترنت"},
-        {"wifi", "wi-fi", "वाईफाई", "वायरलेस", "इंटरनेट"},
-        {"wifi", "wi-fi", "ไวไฟ", "ไร้สาย", "อินเทอร์เน็ต"},
-        {"wifi", "wi-fi", "không dây", "internet", "mạng"}
+            {"wifi", "wi-fi", "wireless", "internet", "network"},
+            {"wifi", "wi-fi", "inalámbrico", "internet", "red"},
+            {"wifi", "wi-fi", "sans fil", "internet", "réseau"},
+            {"wifi", "wi-fi", "drahtlos", "internet", "netzwerk"},
+            {"wifi", "wi-fi", "senza fili", "internet", "rete"},
+            {"wifi", "wi-fi", "sem fio", "internet", "rede"},
+            {"wifi", "wi-fi", "беспроводной", "интернет", "сеть"},
+            {"wifi", "wi-fi", "无线", "网络", "互联网"},
+            {"wifi", "wi-fi", "ワイファイ", "無線", "インターネット"},
+            {"wifi", "wi-fi", "와이파이", "무선", "인터넷"},
+            {"wifi", "wi-fi", "واي فاي", "لاسلكي", "إنترنت"},
+            {"wifi", "wi-fi", "वाईफाई", "वायरलेस", "इंटरनेट"},
+            {"wifi", "wi-fi", "ไวไฟ", "ไร้สาย", "อินเทอร์เน็ต"},
+            {"wifi", "wi-fi", "không dây", "internet", "mạng"}
     };
-    
+
     private static final String[][] BLUETOOTH_KEYWORDS = {
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "bluetooth"},
-        {"bluetooth", "блютуз"},
-        {"bluetooth", "蓝牙"},
-        {"bluetooth", "ブルートゥース"},
-        {"bluetooth", "블루투스"},
-        {"bluetooth", "بلوتوث"},
-        {"bluetooth", "ब्लूटूथ"},
-        {"bluetooth", "บลูทูธ"},
-        {"bluetooth", "bluetooth"}
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "bluetooth"},
+            {"bluetooth", "блютуз"},
+            {"bluetooth", "蓝牙"},
+            {"bluetooth", "ブルートゥース"},
+            {"bluetooth", "블루투스"},
+            {"bluetooth", "بلوتوث"},
+            {"bluetooth", "ब्लूटूथ"},
+            {"bluetooth", "บลูทูธ"},
+            {"bluetooth", "bluetooth"}
     };
-    
+
     private static final String[][] MOBILE_DATA_KEYWORDS = {
-        {"mobile data", "cellular data", "data", "mobile network"},
-        {"datos móviles", "datos celulares", "datos", "red móvil"},
-        {"données mobiles", "données cellulaires", "données", "réseau mobile"},
-        {"mobildaten", "zellulardaten", "daten", "mobilfunk"},
-        {"dati mobili", "dati cellulari", "dati", "rete mobile"},
-        {"dados móveis", "dados celulares", "dados", "rede móvel"},
-        {"мобильные данные", "сотовые данные", "данные", "мобильная сеть"},
-        {"移动数据", "蜂窝数据", "数据", "移动网络"},
-        {"モバイルデータ", "セルラーデータ", "データ", "モバイルネットワーク"},
-        {"모바일 데이터", "셀룰러 데이터", "데이터", "모바일 네트워크"},
-        {"بيانات الجوال", "البيانات الخلوية", "البيانات", "شبكة الجوال"},
-        {"मोबाइल डेटा", "सेलुलर डेटा", "डेटा", "मोबाइल नेटवर्क"},
-        {"ข้อมูลมือถือ", "ข้อมูลเซลลูลาร์", "ข้อมูล", "เครือข่ายมือถือ"},
-        {"dữ liệu di động", "dữ liệu di động", "dữ liệu", "mạng di động"}
+            {"mobile data", "cellular data", "data", "mobile network"},
+            {"datos móviles", "datos celulares", "datos", "red móvil"},
+            {"données mobiles", "données cellulaires", "données", "réseau mobile"},
+            {"mobildaten", "zellulardaten", "daten", "mobilfunk"},
+            {"dati mobili", "dati cellulari", "dati", "rete mobile"},
+            {"dados móveis", "dados celulares", "dados", "rede móvel"},
+            {"мобильные данные", "сотовые данные", "данные", "мобильная сеть"},
+            {"移动数据", "蜂窝数据", "数据", "移动网络"},
+            {"モバイルデータ", "セルラーデータ", "データ", "モバイルネットワーク"},
+            {"모바일 데이터", "셀룰러 데이터", "데이터", "모바일 네트워크"},
+            {"بيانات الجوال", "البيانات الخلوية", "البيانات", "شبكة الجوال"},
+            {"मोबाइल डेटा", "सेलुलर डेटा", "डेटा", "मोबाइल नेटवर्क"},
+            {"ข้อมูลมือถือ", "ข้อมูลเซลลูลาร์", "ข้อมูล", "เครือข่ายมือถือ"},
+            {"dữ liệu di động", "dữ liệu di động", "dữ liệu", "mạng di động"}
     };
-    
+
     private static final String[][] HOTSPOT_KEYWORDS = {
-        {"hotspot", "tethering", "mobile hotspot", "wifi hotspot"},
-        {"punto de acceso", "anclaje", "punto de acceso móvil", "wifi punto de acceso"},
-        {"point d'accès", "partage de connexion", "point d'accès mobile", "wifi point d'accès"},
-        {"hotspot", "tethering", "mobiler hotspot", "wifi hotspot"},
-        {"hotspot", "tethering", "hotspot mobile", "wifi hotspot"},
-        {"hotspot", "tethering", "hotspot móvel", "wifi hotspot"},
-        {"точка доступа", "модем", "мобильная точка доступа", "wifi точка доступа"},
-        {"热点", "网络共享", "移动热点", "wifi热点"},
-        {"ホットスポット", "テザリング", "モバイルホットスポット", "wifiホットスポット"},
-        {"핫스팟", "테더링", "모바일 핫스팟", "wifi 핫스팟"},
-        {"نقطة اتصال", "ربط", "نقطة اتصال محمولة", "wifi نقطة اتصال"},
-        {"हॉटस्पॉट", "टेथरिंग", "मोबाइल हॉटस्पॉट", "wifi हॉटस्पॉट"},
-        {"ฮอตสปอต", "เทเธอริ่ง", "โมบายล์ฮอตสปอต", "wifi ฮอตสปอต"},
-        {"điểm phát sóng", "chia sẻ kết nối", "điểm phát sóng di động", "wifi điểm phát sóng"}
+            {"hotspot", "tethering", "mobile hotspot", "wifi hotspot"},
+            {"punto de acceso", "anclaje", "punto de acceso móvil", "wifi punto de acceso"},
+            {"point d'accès", "partage de connexion", "point d'accès mobile", "wifi point d'accès"},
+            {"hotspot", "tethering", "mobiler hotspot", "wifi hotspot"},
+            {"hotspot", "tethering", "hotspot mobile", "wifi hotspot"},
+            {"hotspot", "tethering", "hotspot móvel", "wifi hotspot"},
+            {"точка доступа", "модем", "мобильная точка доступа", "wifi точка доступа"},
+            {"热点", "网络共享", "移动热点", "wifi热点"},
+            {"ホットスポット", "テザリング", "モバイルホットスポット", "wifiホットスポット"},
+            {"핫스팟", "테더링", "모바일 핫스팟", "wifi 핫스팟"},
+            {"نقطة اتصال", "ربط", "نقطة اتصال محمولة", "wifi نقطة اتصال"},
+            {"हॉटस्पॉट", "टेथरिंग", "मोबाइल हॉटस्पॉट", "wifi हॉटस्पॉट"},
+            {"ฮอตสปอต", "เทเธอริ่ง", "โมบายล์ฮอตสปอต", "wifi ฮอตสปอต"},
+            {"điểm phát sóng", "chia sẻ kết nối", "điểm phát sóng di động", "wifi điểm phát sóng"}
     };
 
     // Brand-specific resource ID patterns
     private static final String[][] WIFI_RESOURCE_PATTERNS = {
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
-        {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"}
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"},
+            {"wifi", "wifi_switch", "wifi_toggle", "wifi_button", "wifi_icon"}
     };
 
     // Advanced toggle methods with brand awareness
@@ -1610,107 +1430,107 @@ public class ClickAccessibilityService extends AccessibilityService {
         Log.d(TAG, "Starting advanced WiFi toggle");
         String deviceBrand = getDeviceBrand();
         String deviceLocale = getDeviceLocale();
-        
+
         // Strategy 1: Try direct toggle via settings
         if (tryDirectToggle("wifi", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         // Strategy 2: Navigate to WiFi settings and toggle
         if (tryNavigateAndToggle("wifi", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         // Strategy 3: Use quick settings panel
         if (tryQuickSettingsToggle("wifi", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         // Strategy 4: Fallback to settings app
         trySettingsAppToggle("wifi", deviceBrand, deviceLocale);
     }
-    
+
     public void toggleBluetoothAdvanced() {
         Log.d(TAG, "Starting advanced Bluetooth toggle");
         String deviceBrand = getDeviceBrand();
         String deviceLocale = getDeviceLocale();
-        
+
         if (tryDirectToggle("bluetooth", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryNavigateAndToggle("bluetooth", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryQuickSettingsToggle("bluetooth", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         trySettingsAppToggle("bluetooth", deviceBrand, deviceLocale);
     }
-    
+
     public void toggleMobileDataAdvanced() {
         Log.d(TAG, "Starting advanced Mobile Data toggle");
         String deviceBrand = getDeviceBrand();
         String deviceLocale = getDeviceLocale();
-        
+
         if (tryDirectToggle("mobile_data", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryNavigateAndToggle("mobile_data", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryQuickSettingsToggle("mobile_data", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         trySettingsAppToggle("mobile_data", deviceBrand, deviceLocale);
     }
-    
+
     public void toggleHotspotAdvanced() {
         Log.d(TAG, "Starting advanced Hotspot toggle");
         String deviceBrand = getDeviceBrand();
         String deviceLocale = getDeviceLocale();
-        
+
         if (tryDirectToggle("hotspot", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryNavigateAndToggle("hotspot", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         if (tryQuickSettingsToggle("hotspot", deviceBrand, deviceLocale)) {
             return;
         }
-        
+
         trySettingsAppToggle("hotspot", deviceBrand, deviceLocale);
     }
-    
+
     private boolean tryDirectToggle(String toggleType, String brand, String locale) {
         Log.d(TAG, "Trying direct toggle for " + toggleType);
-        
+
         // Try to find toggle in current screen
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return false;
-        
+
         boolean result = findAndClickToggleRecursive(rootNode, toggleType, brand, locale, 0);
         rootNode.recycle();
-        
+
         if (result) {
             FeedbackProvider.speakAndToast(this, "Toggled " + toggleType);
             return true;
         }
-        
+
         return false;
     }
-    
+
     private boolean tryNavigateAndToggle(String toggleType, String brand, String locale) {
         Log.d(TAG, "Trying navigate and toggle for " + toggleType);
-        
+
         // Open settings for the specific toggle
         String settingsIntent = getSettingsIntent(toggleType, brand);
         if (settingsIntent != null) {
@@ -1718,67 +1538,67 @@ public class ClickAccessibilityService extends AccessibilityService {
                 Intent intent = new Intent(settingsIntent);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
-                
+
                 // Wait for settings to load, then find and click toggle
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     findAndClickToggleInSettings(toggleType, brand, locale);
                 }, 2000);
-                
+
                 return true;
             } catch (Exception e) {
                 Log.e(TAG, "Failed to open settings for " + toggleType, e);
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean tryQuickSettingsToggle(String toggleType, String brand, String locale) {
         Log.d(TAG, "Trying quick settings toggle for " + toggleType);
-        
+
         // Try to open quick settings panel
         try {
             performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS);
-            
+
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 findAndClickToggleInQuickSettings(toggleType, brand, locale);
             }, 1000);
-            
+
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Failed to open quick settings", e);
             return false;
         }
     }
-    
+
     private void trySettingsAppToggle(String toggleType, String brand, String locale) {
         Log.d(TAG, "Trying settings app toggle for " + toggleType);
-        
+
         // Open main settings app
         try {
             Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            
+
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 navigateToToggleInSettings(toggleType, brand, locale);
             }, 2000);
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Failed to open settings app", e);
             FeedbackProvider.speakAndToast(this, "Unable to toggle " + toggleType);
         }
     }
-    
+
     private boolean findAndClickToggleRecursive(AccessibilityNodeInfo node, String toggleType, String brand, String locale, int depth) {
         if (node == null || depth > 10) return false; // Prevent infinite recursion
-        
+
         // Try multiple identification methods
         if (isToggleNode(node, toggleType, brand, locale)) {
             Log.d(TAG, "Found toggle node for " + toggleType + " at depth " + depth);
             return performToggleClick(node);
         }
-        
+
         // Recursively search children
         for (int i = 0; i < node.getChildCount(); i++) {
             @SuppressWarnings("unchecked")
@@ -1789,17 +1609,17 @@ public class ClickAccessibilityService extends AccessibilityService {
                 if (result) return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean isToggleNode(AccessibilityNodeInfo node, String toggleType, String brand, String locale) {
         if (node == null || !node.isClickable()) return false;
-        
+
         // Get keywords for this toggle type and locale
         String[] keywords = getKeywordsForToggle(toggleType, locale);
         String[] resourcePatterns = getResourcePatternsForToggle(toggleType, brand);
-        
+
         // Check text content
         CharSequence text = node.getText();
         if (text != null) {
@@ -1811,7 +1631,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         // Check content description
         CharSequence contentDesc = node.getContentDescription();
         if (contentDesc != null) {
@@ -1823,7 +1643,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         // Check resource ID
         String resourceId = node.getViewIdResourceName();
         if (resourceId != null) {
@@ -1835,13 +1655,13 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         // Check class name for toggle indicators
         CharSequence className = node.getClassName();
         if (className != null) {
             String lowerClassName = className.toString().toLowerCase();
-            if (lowerClassName.contains("switch") || lowerClassName.contains("toggle") || 
-                lowerClassName.contains("checkbox") || lowerClassName.contains("button")) {
+            if (lowerClassName.contains("switch") || lowerClassName.contains("toggle") ||
+                    lowerClassName.contains("checkbox") || lowerClassName.contains("button")) {
                 // Additional check: is it near toggle-related text?
                 if (hasToggleRelatedTextNearby(node, toggleType, locale)) {
                     Log.d(TAG, "Found toggle by class name: " + className);
@@ -1849,10 +1669,10 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean hasToggleRelatedTextNearby(AccessibilityNodeInfo node, String toggleType, String locale) {
         // Check if this node is near text that matches the toggle type
         AccessibilityNodeInfo parent = node.getParent();
@@ -1861,12 +1681,12 @@ public class ClickAccessibilityService extends AccessibilityService {
         }
         return false;
     }
-    
+
     private boolean findToggleTextInNode(AccessibilityNodeInfo node, String toggleType, String locale) {
         if (node == null) return false;
-        
+
         String[] keywords = getKeywordsForToggle(toggleType, locale);
-        
+
         // Check text
         CharSequence text = node.getText();
         if (text != null) {
@@ -1877,7 +1697,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         // Check content description
         CharSequence contentDesc = node.getContentDescription();
         if (contentDesc != null) {
@@ -1888,7 +1708,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 }
             }
         }
-        
+
         // Recursively check children
         for (int i = 0; i < node.getChildCount(); i++) {
             @SuppressWarnings("unchecked")
@@ -1899,34 +1719,34 @@ public class ClickAccessibilityService extends AccessibilityService {
                 if (result) return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private boolean performToggleClick(AccessibilityNodeInfo node) {
         if (node == null) return false;
-        
+
         try {
             // Focus first, then click
             boolean focusResult = node.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
             Log.d(TAG, "Focus result: " + focusResult);
-            
+
             // Small delay for focus
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 boolean clickResult = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 Log.d(TAG, "Click result: " + clickResult);
             }, 100);
-            
+
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error performing toggle click", e);
             return false;
         }
     }
-    
+
     private String[] getKeywordsForToggle(String toggleType, String locale) {
         int localeIndex = getLocaleIndex(locale);
-        
+
         switch (toggleType) {
             case "wifi":
                 return WIFI_KEYWORDS[localeIndex];
@@ -1940,10 +1760,10 @@ public class ClickAccessibilityService extends AccessibilityService {
                 return new String[]{toggleType};
         }
     }
-    
+
     private String[] getResourcePatternsForToggle(String toggleType, String brand) {
         int brandIndex = getBrandIndex(brand);
-        
+
         switch (toggleType) {
             case "wifi":
                 return WIFI_RESOURCE_PATTERNS[brandIndex];
@@ -1957,7 +1777,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 return new String[]{toggleType};
         }
     }
-    
+
     private String getSettingsIntent(String toggleType, String brand) {
         switch (toggleType) {
             case "wifi":
@@ -1972,43 +1792,43 @@ public class ClickAccessibilityService extends AccessibilityService {
                 return null;
         }
     }
-    
+
     private void findAndClickToggleInSettings(String toggleType, String brand, String locale) {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
-        
+
         boolean found = findAndClickToggleRecursive(rootNode, toggleType, brand, locale, 0);
         rootNode.recycle();
-        
+
         if (found) {
             FeedbackProvider.speakAndToast(this, "Toggled " + toggleType + " in settings");
         } else {
             FeedbackProvider.speakAndToast(this, "Could not find " + toggleType + " toggle");
         }
     }
-    
+
     private void findAndClickToggleInQuickSettings(String toggleType, String brand, String locale) {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
-        
+
         boolean found = findAndClickToggleRecursive(rootNode, toggleType, brand, locale, 0);
         rootNode.recycle();
-        
+
         if (found) {
             FeedbackProvider.speakAndToast(this, "Toggled " + toggleType );
         } else {
             FeedbackProvider.speakAndToast(this, "Could not find " + toggleType + " toggle");
         }
     }
-    
+
     private void navigateToToggleInSettings(String toggleType, String brand, String locale) {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
-        
+
         // Try to find and click on the settings category for this toggle
         String[] keywords = getKeywordsForToggle(toggleType, locale);
         boolean found = false;
-        
+
         for (String keyword : keywords) {
             @SuppressWarnings("unchecked")
             List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByText(keyword);
@@ -2018,7 +1838,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                         node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                         node.recycle();
                         found = true;
-                        
+
                         // Wait for navigation, then find toggle
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             findAndClickToggleInSettings(toggleType, brand, locale);
@@ -2039,14 +1859,14 @@ public class ClickAccessibilityService extends AccessibilityService {
         unlockAttempts.remove(packageName); // Reset attempts on successful unlock
         Log.d(TAG, "App unlocked: " + packageName + " at " + currentTime);
     }
-    
+
     public static void markAppUnlockedExtended(String packageName) {
         long currentTime = System.currentTimeMillis();
         unlockedLockedApps.put(packageName, currentTime);
         unlockAttempts.remove(packageName);
         Log.d(TAG, "App unlocked with extended timeout: " + packageName);
     }
-    
+
     public static boolean isAppUnlocked(String packageName) {
         Long unlockTime = unlockedLockedApps.get(packageName);
         if (unlockTime == null) return false;
@@ -2059,14 +1879,14 @@ public class ClickAccessibilityService extends AccessibilityService {
         }
         return isUnlocked;
     }
-    
+
     public static void recordUnlockAttempt(String packageName) {
         Integer attempts = unlockAttempts.get(packageName);
         int currentAttempts = attempts != null ? attempts : 0;
         unlockAttempts.put(packageName, currentAttempts + 1);
         Log.d(TAG, "Unlock attempt recorded for " + packageName + ": " + (currentAttempts + 1));
     }
-    
+
     public static boolean isAppLockedDueToAttempts(String packageName) {
         Integer attempts = unlockAttempts.get(packageName);
         if (attempts == null) return false;
@@ -2078,26 +1898,26 @@ public class ClickAccessibilityService extends AccessibilityService {
         }
         return attempts >= MAX_UNLOCK_ATTEMPTS;
     }
-    
+
     public static boolean isTrustedApp(String packageName) {
         return packageName != null && (
-            packageName.contains("com.android.settings") ||
-            packageName.contains("com.google.android.apps.maps") ||
-            packageName.contains("com.whatsapp") ||
-            packageName.contains("com.facebook") ||
-            packageName.contains("com.instagram") ||
-            packageName.contains("com.twitter") ||
-            packageName.contains("com.snapchat") ||
-            packageName.contains("com.spotify") ||
-            packageName.contains("com.netflix") ||
-            packageName.contains("com.amazon") ||
-            packageName.contains("com.google.android.gm") ||
-            packageName.contains("com.microsoft.teams") ||
-            packageName.contains("com.skype") ||
-            packageName.contains("com.zoom")
+                packageName.contains("com.android.settings") ||
+                        packageName.contains("com.google.android.apps.maps") ||
+                        packageName.contains("com.whatsapp") ||
+                        packageName.contains("com.facebook") ||
+                        packageName.contains("com.instagram") ||
+                        packageName.contains("com.twitter") ||
+                        packageName.contains("com.snapchat") ||
+                        packageName.contains("com.spotify") ||
+                        packageName.contains("com.netflix") ||
+                        packageName.contains("com.amazon") ||
+                        packageName.contains("com.google.android.gm") ||
+                        packageName.contains("com.microsoft.teams") ||
+                        packageName.contains("com.skype") ||
+                        packageName.contains("com.zoom")
         );
     }
-    
+
     public static long getRemainingUnlockTime(String packageName) {
         Long unlockTime = unlockedLockedApps.get(packageName);
         if (unlockTime == null) return 0;
@@ -2106,19 +1926,19 @@ public class ClickAccessibilityService extends AccessibilityService {
         long remaining = timeout - (currentTime - unlockTime);
         return Math.max(0, remaining);
     }
-    
+
     public static void clearAppUnlockState(String packageName) {
         unlockedLockedApps.remove(packageName);
         unlockAttempts.remove(packageName);
         Log.d(TAG, "Unlock state cleared for: " + packageName);
     }
-    
+
     public static void clearAllUnlockStates() {
         unlockedLockedApps.clear();
         unlockAttempts.clear();
         Log.d(TAG, "All unlock states cleared");
     }
-    
+
     // Restore missing methods for quick settings, camera, and device info
     public void takeScreenshotQuickOrProjection() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
@@ -2126,19 +1946,19 @@ public class ClickAccessibilityService extends AccessibilityService {
         } else {
             // Fallback: try to find screenshot tile in quick settings
             performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root != null) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root != null) {
                     boolean clicked = false;
                     String[] keywords = {"Screenshot", "Screen capture", "Capture d'écran", "スクリーンショット", "Скриншот", "Captura de pantalla", "Schermata", "Bildschirmfoto", "截屏", "Captura", "PrtSc", "PrtScn"};
                     for (String keyword : keywords) {
                         clicked = findAndClickQuickSettingToggle(root, keyword);
                         if (clicked) break;
                     }
-            root.recycle();
+                    root.recycle();
                     if (clicked) {
                         FeedbackProvider.speakAndToast(this, "Screenshot taken.");
-        } else {
+                    } else {
                         FeedbackProvider.speakAndToast(this, "Could not find screenshot tile.");
                     }
                 }
@@ -2150,168 +1970,96 @@ public class ClickAccessibilityService extends AccessibilityService {
     }
 
     // --- Quick Settings Tile Trigger ---
-    private void triggerQuickSettingsTile(String tileKeyword) {
+    private void triggerQuickSettingsTile(final String tileKeyword) {
+        Log.d(TAG, "Triggering quick settings tile: " + tileKeyword);
+        // Open quick settings panel first
         performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             AccessibilityNodeInfo root = getRootInActiveWindow();
-            boolean clicked = false;
             if (root != null) {
-                clicked = findAndClickQuickSettingToggle(root, tileKeyword);
+                boolean clicked = clickQuickSettingsTileByLabel(root, tileKeyword);
                 root.recycle();
-            }
-            if (clicked) {
-                FeedbackProvider.speakAndToast(this, tileKeyword + " toggled");
+                if (!clicked) {
+                    FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings");
+                }
             } else {
-                FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " tile");
+                FeedbackProvider.speakAndToast(this, "Could not access quick settings panel");
             }
             if (android.os.Build.VERSION.SDK_INT >= 28) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-        }, 300);
+        }, 200);
     }
 
-    public void triggerQuickSettingsTileWithState(String tileKeyword, boolean shouldTurnOn) {
+    public void triggerQuickSettingsTileWithState(final String tileKeyword, final boolean shouldTurnOn) {
+        Log.d(TAG, "Triggering quick settings tile with state: " + tileKeyword + " (shouldTurnOn: " + shouldTurnOn + ")");
+        // Open quick settings panel first
         performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             AccessibilityNodeInfo root = getRootInActiveWindow();
-            boolean clicked = false;
             if (root != null) {
-                clicked = findAndClickQuickSettingToggleWithState(root, tileKeyword, shouldTurnOn);
+                boolean clicked = clickQuickSettingsTileByLabelAndState(root, tileKeyword, shouldTurnOn);
                 root.recycle();
-            }
-            if (clicked) {
-                FeedbackProvider.speakAndToast(this, tileKeyword + " toggled");
+                if (!clicked) {
+                    FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings");
+                }
             } else {
-                FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " tile");
+                FeedbackProvider.speakAndToast(this, "Could not access quick settings panel");
             }
             if (android.os.Build.VERSION.SDK_INT >= 28) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-        }, 300);
+        }, 200);
     }
 
-    private void debugQuickSettings() {
-        performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                dumpAccessibilityTree(root, 0);
-                root.recycle();
-            }
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-            }
-        }, 1000);
-    }
-    
-    private void listQuickSettingsTiles() {
-        performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                listAvailableTiles(root);
-                root.recycle();
-            }
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-            }
-        }, 1000);
-    }
-    
-    private void listAvailableTiles(AccessibilityNodeInfo node) {
-        if (node == null) return;
-        CharSequence text = node.getText();
-        CharSequence desc = node.getContentDescription();
-        if (node.isClickable() && node.isVisibleToUser()) {
-            if (text != null && text.length() > 0) {
-                Log.d(TAG, "Available Quick Settings Tile: '" + text + "'");
-                FeedbackProvider.speakAndToast(this, "Found tile: " + text);
-            } else if (desc != null && desc.length() > 0) {
-                Log.d(TAG, "Available Quick Settings Tile: '" + desc + "'");
-                FeedbackProvider.speakAndToast(this, "Found tile: " + desc);
-            }
-        }
-        for (int i = 0; i < node.getChildCount(); i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            listAvailableTiles(child);
-        }
-    }
-    
-    // --- Auto Photo Capture ---
-    private void takePhotoAuto() {
-        FeedbackProvider.speakAndToast(this, "Opening camera and taking photo");
-        Intent cameraIntent = new Intent("android.media.action.IMAGE_CAPTURE");
-        cameraIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(cameraIntent);
-        } catch (Exception e) {
-            FeedbackProvider.speakAndToast(this, "Could not open camera app");
-            return;
-        }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            attemptPhotoCapture(1);
-        }, 3000);
-    }
-
-    private void attemptPhotoCapture(int attempt) {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root != null) {
-            boolean captured = findAndClickCameraCaptureButton(root);
-            if (captured) {
-                FeedbackProvider.speakAndToast(this, "Photo captured");
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    performGlobalAction(GLOBAL_ACTION_BACK);
-                }, 2000);
-            } else if (attempt < 3) {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    attemptPhotoCapture(attempt + 1);
-                }, 1000);
-        } else {
-                FeedbackProvider.speakAndToast(this, "Could not find camera button");
-        }
-        root.recycle();
-        }
-    }
-
-    private boolean findAndClickCameraCaptureButton(AccessibilityNodeInfo node) {
+    private boolean clickQuickSettingsTileByLabel(AccessibilityNodeInfo node, String label) {
         if (node == null) return false;
         CharSequence text = node.getText();
         CharSequence desc = node.getContentDescription();
-        String className = node.getClassName() != null ? node.getClassName().toString() : "";
         if (node.isClickable() && node.isVisibleToUser()) {
-            if ((text != null && (text.toString().toLowerCase().contains("capture") || text.toString().toLowerCase().contains("photo"))) ||
-                (desc != null && (desc.toString().toLowerCase().contains("capture") || desc.toString().toLowerCase().contains("photo"))) ||
-                className.toLowerCase().contains("shutter") || className.toLowerCase().contains("capture")) {
+            if ((text != null && text.toString().equalsIgnoreCase(label)) ||
+                (desc != null && desc.toString().equalsIgnoreCase(label))) {
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                FeedbackProvider.speakAndToast(this, label + " toggled");
                 return true;
             }
         }
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-            boolean found = findAndClickCameraCaptureButton(child);
-            if (found) return true;
+            if (clickQuickSettingsTileByLabel(child, label)) {
+                return true;
+            }
         }
         return false;
     }
 
-    // --- Camera Switch Button ---
-    private boolean findAndClickCameraSwitchButton(AccessibilityNodeInfo node) {
+    private boolean clickQuickSettingsTileByLabelAndState(AccessibilityNodeInfo node, String label, boolean shouldTurnOn) {
         if (node == null) return false;
         CharSequence text = node.getText();
         CharSequence desc = node.getContentDescription();
-        String resourceId = node.getViewIdResourceName();
+        boolean isToggle = false;
+        boolean isOn = false;
+        if (node.isCheckable()) {
+            isToggle = true;
+            isOn = node.isChecked();
+        }
         if (node.isClickable() && node.isVisibleToUser()) {
-            if ((text != null && (text.toString().toLowerCase().contains("switch") || text.toString().toLowerCase().contains("flip") || text.toString().toLowerCase().contains("camera"))) ||
-                (desc != null && (desc.toString().toLowerCase().contains("switch") || desc.toString().toLowerCase().contains("flip") || desc.toString().toLowerCase().contains("camera"))) ||
-                (resourceId != null && (resourceId.toLowerCase().contains("switch") || resourceId.toLowerCase().contains("flip") || resourceId.toLowerCase().contains("camera")))) {
+            if ((text != null && text.toString().equalsIgnoreCase(label)) ||
+                (desc != null && desc.toString().equalsIgnoreCase(label))) {
+                if (isToggle && isOn == shouldTurnOn) {
+                    FeedbackProvider.speakAndToast(this, label + " is already " + (isOn ? "on" : "off"));
+                    return true;
+                }
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                FeedbackProvider.speakAndToast(this, label + (shouldTurnOn ? " enabled" : " disabled"));
                 return true;
             }
         }
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-            boolean found = findAndClickCameraSwitchButton(child);
-            if (found) return true;
+            if (clickQuickSettingsTileByLabelAndState(child, label, shouldTurnOn)) {
+                return true;
+            }
         }
         return false;
     }
@@ -2347,8 +2095,8 @@ public class ClickAccessibilityService extends AccessibilityService {
         String resourceId = node.getViewIdResourceName();
         if (node.isClickable() && node.isVisibleToUser()) {
             if ((text != null && text.toString().toLowerCase().contains(keyword.toLowerCase())) ||
-                (desc != null && desc.toString().toLowerCase().contains(keyword.toLowerCase())) ||
-                (resourceId != null && resourceId.toLowerCase().contains(keyword.toLowerCase()))) {
+                    (desc != null && desc.toString().toLowerCase().contains(keyword.toLowerCase())) ||
+                    (resourceId != null && resourceId.toLowerCase().contains(keyword.toLowerCase()))) {
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 return true;
             }
@@ -2368,8 +2116,8 @@ public class ClickAccessibilityService extends AccessibilityService {
         String resourceId = node.getViewIdResourceName();
         if (node.isClickable() && node.isVisibleToUser()) {
             if ((text != null && text.toString().toLowerCase().contains(keyword.toLowerCase())) ||
-                (desc != null && desc.toString().toLowerCase().contains(keyword.toLowerCase())) ||
-                (resourceId != null && resourceId.toLowerCase().contains(keyword.toLowerCase()))) {
+                    (desc != null && desc.toString().toLowerCase().contains(keyword.toLowerCase())) ||
+                    (resourceId != null && resourceId.toLowerCase().contains(keyword.toLowerCase()))) {
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 return true;
             }
@@ -2379,12 +2127,23 @@ public class ClickAccessibilityService extends AccessibilityService {
             boolean found = findAndClickQuickSettingToggleWithState(child, keyword, shouldTurnOn);
             if (found) return true;
         }
-            return false;
-        }
-        
+        return false;
+    }
+
     private String getDeviceBrand() {
         String manufacturer = android.os.Build.MANUFACTURER.toLowerCase();
         return manufacturer;
+    }
+
+    private boolean isMotorolaDevice() {
+        String manufacturer = android.os.Build.MANUFACTURER.toLowerCase();
+        String brand = android.os.Build.BRAND.toLowerCase();
+        String model = android.os.Build.MODEL.toLowerCase();
+
+        return manufacturer.contains("motorola") ||
+                brand.contains("motorola") ||
+                model.contains("moto") ||
+                model.contains("motorola");
     }
 
     private String getDeviceLocale() {
@@ -2413,18 +2172,18 @@ public class ClickAccessibilityService extends AccessibilityService {
 
     private boolean isCameraApp(String packageName) {
         return packageName != null && (
-            packageName.contains("camera") ||
-            packageName.contains("photo") ||
-            packageName.contains("gallery") ||
-            packageName.equals("com.google.android.GoogleCamera") ||
-            packageName.equals("com.android.camera") ||
-            packageName.equals("com.motorola.camera3") ||
-            packageName.equals("com.sec.android.camera") ||
-            packageName.equals("com.oneplus.camera") ||
-            packageName.equals("com.oppo.camera") ||
-            packageName.equals("com.vivo.camera") ||
-            packageName.equals("com.xiaomi.camera") ||
-            packageName.equals("com.huawei.camera")
+                packageName.contains("camera") ||
+                        packageName.contains("photo") ||
+                        packageName.contains("gallery") ||
+                        packageName.equals("com.google.android.GoogleCamera") ||
+                        packageName.equals("com.android.camera") ||
+                        packageName.equals("com.motorola.camera3") ||
+                        packageName.equals("com.sec.android.camera") ||
+                        packageName.equals("com.oneplus.camera") ||
+                        packageName.equals("com.oppo.camera") ||
+                        packageName.equals("com.vivo.camera") ||
+                        packageName.equals("com.xiaomi.camera") ||
+                        packageName.equals("com.huawei.camera")
         );
     }
 
@@ -3025,4 +2784,228 @@ public class ClickAccessibilityService extends AccessibilityService {
         }
         return null;
     }
-} 
+
+    // --- Debug and Utility Methods ---
+    private void debugQuickSettings() {
+        performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                dumpAccessibilityTree(root, 0);
+                root.recycle();
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
+        }, 1000);
+    }
+
+    private void listQuickSettingsTiles() {
+        performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                listAvailableTiles(root);
+                root.recycle();
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
+        }, 200);
+    }
+
+    private void listAvailableTiles(AccessibilityNodeInfo node) {
+        if (node == null) return;
+        CharSequence text = node.getText();
+        CharSequence desc = node.getContentDescription();
+        if (node.isClickable() && node.isVisibleToUser()) {
+            if (text != null && text.length() > 0) {
+                Log.d(TAG, "Available Quick Settings Tile: '" + text + "'");
+                FeedbackProvider.speakAndToast(this, "Found tile: " + text);
+            } else if (desc != null && desc.length() > 0) {
+                Log.d(TAG, "Available Quick Settings Tile: '" + desc + "'");
+                FeedbackProvider.speakAndToast(this, "Found tile: " + desc);
+            }
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            listAvailableTiles(child);
+        }
+    }
+
+    // --- Auto Photo Capture ---
+    private void takePhotoAuto() {
+        FeedbackProvider.speakAndToast(this, "Opening camera and taking photo");
+        
+        // Try to open the default camera app directly
+        Intent cameraIntent = new Intent(Intent.ACTION_MAIN);
+        cameraIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        cameraIntent.setPackage("com.motorola.camera3"); // Default Motorola camera
+        
+        try {
+            startActivity(cameraIntent);
+        } catch (Exception e) {
+            // Fallback to generic camera intent if specific app fails
+            try {
+                Intent fallbackIntent = new Intent("android.media.action.IMAGE_CAPTURE");
+                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(fallbackIntent);
+            } catch (Exception e2) {
+                FeedbackProvider.speakAndToast(this, "Could not open camera app");
+                return;
+            }
+        }
+        
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            attemptPhotoCapture(1);
+        }, 3000);
+    }
+
+    private void attemptPhotoCapture(int attempt) {
+        Log.d(TAG, "Attempting photo capture, attempt " + attempt);
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root != null) {
+            boolean captured = findAndClickCameraCaptureButton(root);
+            if (captured) {
+                Log.d(TAG, "Photo capture button found and clicked on attempt " + attempt);
+                FeedbackProvider.speakAndToast(this, "Photo captured successfully");
+                // Wait longer for photo to be processed and saved, then go back to close camera
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    performGlobalAction(GLOBAL_ACTION_BACK);
+                }, 5000); // Increased from 2000ms to 5000ms to ensure photo is saved
+            } else if (attempt < 3) {
+                Log.d(TAG, "Photo capture button not found on attempt " + attempt + ", retrying...");
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    attemptPhotoCapture(attempt + 1);
+                }, 1000);
+            } else {
+                Log.w(TAG, "Could not find camera capture button after " + attempt + " attempts");
+                //FeedbackProvider.speakAndToast(this, "Could not find camera capture button");
+            }
+            root.recycle();
+        } else {
+            Log.e(TAG, "Root node is null on attempt " + attempt);
+            if (attempt < 3) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    attemptPhotoCapture(attempt + 1);
+                }, 1000);
+            } else {
+                //FeedbackProvider.speakAndToast(this, "Cannot access camera interface");
+            }
+        }
+    }
+
+    private boolean findAndClickCameraCaptureButton(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        CharSequence text = node.getText();
+        CharSequence desc = node.getContentDescription();
+        String className = node.getClassName() != null ? node.getClassName().toString() : "";
+        String resourceId = node.getViewIdResourceName();
+
+        if (node.isClickable() && node.isVisibleToUser()) {
+            // Look for capture-related labels and classes
+            boolean isCaptureButton = false;
+
+            // Check text content
+            if (text != null) {
+                String lowerText = text.toString().toLowerCase();
+                if (lowerText.equals("capture") || lowerText.equals("photo") ||
+                        lowerText.equals("shoot") || lowerText.equals("take") ||
+                        lowerText.contains("capture") || lowerText.contains("photo")) {
+                    isCaptureButton = true;
+                }
+            }
+
+            // Check content description
+            if (desc != null) {
+                String lowerDesc = desc.toString().toLowerCase();
+                if (lowerDesc.equals("capture") || lowerDesc.equals("photo") ||
+                        lowerDesc.equals("shoot") || lowerDesc.equals("take") ||
+                        lowerDesc.contains("capture") || lowerDesc.contains("photo")) {
+                    isCaptureButton = true;
+                }
+            }
+
+            // Check resource ID
+            if (resourceId != null) {
+                String lowerResourceId = resourceId.toLowerCase();
+                if (lowerResourceId.contains("capture") || lowerResourceId.contains("photo") ||
+                        lowerResourceId.contains("shutter") || lowerResourceId.contains("shoot")) {
+                    isCaptureButton = true;
+                }
+            }
+
+            // Check class name for camera-specific classes
+            if (className.toLowerCase().contains("shutter") ||
+                    className.toLowerCase().contains("capture") ||
+                    className.toLowerCase().contains("camera")) {
+                isCaptureButton = true;
+            }
+
+            if (isCaptureButton) {
+                Log.d(TAG, "Found camera capture button: text='" + text + "', desc='" + desc + "', resourceId='" + resourceId + "', className='" + className + "'");
+                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                return true;
+            }
+        }
+
+        // Recursively search children
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            boolean found = findAndClickCameraCaptureButton(child);
+            if (found) return true;
+        }
+        return false;
+    }
+
+    private final BroadcastReceiver quickSettingsReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("com.mvp.sarah.ACTION_TOGGLE_QUICK_SETTINGS_TILE".equals(intent.getAction())) {
+                String tileLabel = intent.getStringExtra("tile_label");
+                boolean hasState = intent.hasExtra("should_turn_on");
+                boolean shouldTurnOn = intent.getBooleanExtra("should_turn_on", true);
+                if (tileLabel != null) {
+                    if (hasState) {
+                        triggerQuickSettingsTileWithState(tileLabel, shouldTurnOn);
+                    } else {
+                        triggerQuickSettingsTile(tileLabel);
+                    }
+                }
+            } else if ("com.mvp.sarah.ACTION_LIST_QUICK_SETTINGS_TILES".equals(intent.getAction())) {
+                performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    AccessibilityNodeInfo root = getRootInActiveWindow();
+                    if (root != null) {
+                        listAndSpeakAvailableTiles(root);
+                        root.recycle();
+                    } else {
+                        FeedbackProvider.speakAndToast(ClickAccessibilityService.this, "Could not access quick settings panel");
+                    }
+                    if (android.os.Build.VERSION.SDK_INT >= 28) {
+                        performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+                    }
+                }, 200);
+            }
+        }
+    };
+
+    private void listAndSpeakAvailableTiles(AccessibilityNodeInfo node) {
+        if (node == null) return;
+        CharSequence text = node.getText();
+        CharSequence desc = node.getContentDescription();
+        if (node.isClickable() && node.isVisibleToUser()) {
+            if (text != null && text.length() > 0) {
+                Log.d(TAG, "Available Quick Settings Tile: '" + text + "'");
+                FeedbackProvider.speakAndToast(this, "Tile: " + text);
+            } else if (desc != null && desc.length() > 0) {
+                Log.d(TAG, "Available Quick Settings Tile: '" + desc + "'");
+                FeedbackProvider.speakAndToast(this, "Tile: " + desc);
+            }
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            listAndSpeakAvailableTiles(child);
+        }
+    }
+}

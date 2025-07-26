@@ -6,9 +6,13 @@ import android.util.Log;
 import com.mvp.sarah.CommandHandler;
 import com.mvp.sarah.CommandRegistry;
 import com.mvp.sarah.FeedbackProvider;
+import android.content.SharedPreferences;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 public class QuickSettingsHandler implements CommandHandler, CommandRegistry.SuggestionProvider {
     
@@ -89,6 +93,66 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         "turn off ultra power saving"
     );
 
+    private static final String PREFS_NAME = "QuickSettingsPrefs";
+    private static final String KEY_TILE_MAP = "tile_label_map";
+
+    private static final Map<String, List<String>> DEFAULT_LABELS = new HashMap<>();
+    static {
+        DEFAULT_LABELS.put("wifi", Arrays.asList("Wi-Fi", "WLAN", "Wireless", "WiFi"));
+        DEFAULT_LABELS.put("bluetooth", Arrays.asList("Bluetooth", "BT"));
+        DEFAULT_LABELS.put("mobile_data", Arrays.asList("Internet", "Mobile data", "Cellular data", "Data"));
+        DEFAULT_LABELS.put("hotspot", Arrays.asList("Hotspot", "Mobile hotspot", "Tethering"));
+        DEFAULT_LABELS.put("airplane", Arrays.asList("Airplane mode", "Flight mode", "Aeroplane mode"));
+        DEFAULT_LABELS.put("flashlight", Arrays.asList("Flashlight", "Torch", "Lantern", "Light"));
+        // Add more as needed
+    }
+
+    // Get the mapped label for a command, or fallback to default
+    private String getMappedTileLabel(Context context, String logicalCommand, String defaultLabel) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String mapJson = prefs.getString(KEY_TILE_MAP, null);
+        if (mapJson != null) {
+            try {
+                org.json.JSONObject obj = new org.json.JSONObject(mapJson);
+                if (obj.has(logicalCommand)) {
+                    return obj.getString(logicalCommand);
+                }
+            } catch (org.json.JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return defaultLabel;
+    }
+
+    // Set the mapping for a logical command to a tile label
+    public static void setTileLabelMapping(Context context, String logicalCommand, String tileLabel) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String mapJson = prefs.getString(KEY_TILE_MAP, null);
+        org.json.JSONObject obj = new org.json.JSONObject();
+        try {
+            if (mapJson != null) obj = new org.json.JSONObject(mapJson);
+            obj.put(logicalCommand, tileLabel);
+            prefs.edit().putString(KEY_TILE_MAP, obj.toString()).apply();
+        } catch (org.json.JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<String> getAllLabels(Context context, String logicalCommand) {
+        List<String> labels = new ArrayList<>();
+        // Add user-mapped label if present
+        String mapped = getMappedTileLabel(context, logicalCommand, null);
+        if (mapped != null) labels.add(mapped);
+        // Add all defaults
+        List<String> defaults = DEFAULT_LABELS.get(logicalCommand);
+        if (defaults != null) {
+            for (String d : defaults) {
+                if (!labels.contains(d)) labels.add(d);
+            }
+        }
+        return labels;
+    }
+
     @Override
     public boolean canHandle(String command) {
         String lowerCmd = command.toLowerCase();
@@ -124,11 +188,24 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
                lowerCmd.contains("mobile internet");
     }
 
+    private void sendClickLabelBroadcast(Context context, String label) {
+        Intent intent = new Intent("com.mvp.sarah.ACTION_CLICK_LABEL");
+        intent.putExtra("label", label);
+        context.sendBroadcast(intent);
+    }
+
     @Override
     public void handle(Context context, String command) {
         String lowerCmd = command.toLowerCase();
         Log.d(TAG, "Handling quick settings command: " + command);
         
+        if (lowerCmd.contains("list quick settings tiles")) {
+            Intent intent = new Intent("com.mvp.sarah.ACTION_LIST_QUICK_SETTINGS_TILES");
+            context.sendBroadcast(intent);
+            FeedbackProvider.speakAndToast(context, "Listing all visible quick settings tiles");
+            return;
+        }
+
         // Handle opening quick settings panel
         if (lowerCmd.contains("open quick settings") || 
             lowerCmd.contains("show quick settings") ||
@@ -145,8 +222,10 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         }
         
         // Handle flashlight/torch
-        if (lowerCmd.contains("flashlight") || lowerCmd.contains("torch")) {
-            handleFlashlight(context, lowerCmd);
+        if (lowerCmd.contains("flashlight") || lowerCmd.contains("torch") || lowerCmd.contains("lantern") || lowerCmd.contains("light")) {
+            for (String label : getAllLabels(context, "flashlight")) {
+                sendClickLabelBroadcast(context, label);
+            }
             return;
         }
         
@@ -235,9 +314,16 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         }
         
         // Handle WiFi, Bluetooth, Mobile Data, Hotspot (these are handled by existing handlers)
-        if (lowerCmd.contains("wifi") || lowerCmd.contains("bluetooth") || 
-            lowerCmd.contains("hotspot")) {
-            FeedbackProvider.speakAndToast(context, "Please use the specific commands for WiFi, Bluetooth, or Hotspot.");
+        if (lowerCmd.contains("bluetooth")) {
+            handleBluetooth(context, lowerCmd);
+            return;
+        }
+        if (lowerCmd.contains("wifi")) {
+            handleWiFi(context, lowerCmd);
+            return;
+        }
+        if (lowerCmd.contains("hotspot")) {
+            handleMobileHotspot(context, lowerCmd);
             return;
         }
         
@@ -349,7 +435,7 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
     
     private void handleMobileHotspot(Context context, String command) {
         Log.d(TAG, "Handling mobile hotspot command: " + command);
-        String tileKeyword = "Mobile hotspot";
+        String tileKeyword = "hotspot";
         triggerQuickSettingsTile(context, tileKeyword);
         String action = command.contains("turn off") || command.contains("off") ? "turned off" : "turned on";
         FeedbackProvider.speakAndToast(context, "Mobile hotspot " + action);
@@ -387,11 +473,25 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
         FeedbackProvider.speakAndToast(context, "Ultra power saving " + action);
     }
     
+    private void handleBluetooth(Context context, String command) {
+        Log.d(TAG, "Handling bluetooth command: " + command);
+        String tileKeyword = getMappedTileLabel(context, "bluetooth", "Bluetooth");
+        triggerQuickSettingsTile(context, tileKeyword);
+        String action = command.contains("turn off") || command.contains("off") ? "turned off" : "turned on";
+        FeedbackProvider.speakAndToast(context, "Bluetooth " + action);
+    }
+    private void handleWiFi(Context context, String command) {
+        Log.d(TAG, "Handling wifi command: " + command);
+        String tileKeyword = getMappedTileLabel(context, "wi-fi", "wi-fi");
+        triggerQuickSettingsTile(context, tileKeyword);
+        String action = command.contains("turn off") || command.contains("off") ? "turned off" : "turned on";
+        FeedbackProvider.speakAndToast(context, "WiFi " + action);
+    }
+    
     private void handleMobileData(Context context, String command) {
         Log.d(TAG, "Handling mobile data/internet command: " + command);
-        // For internet commands, be very specific to avoid WiFi confusion
-        String tileKeyword = "Internet"; // Use exact keyword that works on your device
         boolean shouldTurnOn = !command.contains("turn off") && !command.contains("off");
+        String tileKeyword = getMappedTileLabel(context, "mobile data", "mobile data");
         triggerQuickSettingsTileWithState(context, tileKeyword, shouldTurnOn);
         String action = shouldTurnOn ? "turned on" : "turned off";
         FeedbackProvider.speakAndToast(context, "Mobile data " + action);

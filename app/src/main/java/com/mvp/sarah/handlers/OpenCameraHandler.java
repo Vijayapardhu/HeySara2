@@ -31,6 +31,12 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
                lowerCmd.contains("front camera") || 
                lowerCmd.contains("back camera") ||
                lowerCmd.contains("learn switch button") ||
+               lowerCmd.contains("take photo") ||
+               lowerCmd.contains("take picture") ||
+               lowerCmd.contains("click photo") ||
+               lowerCmd.contains("click picture") ||
+               lowerCmd.contains("capture photo") ||
+               lowerCmd.contains("capture picture") ||
                // Add more specific patterns to ensure we catch camera-related commands
                (lowerCmd.contains("camera") && (lowerCmd.contains("switch") || lowerCmd.contains("change") || lowerCmd.contains("flip")));
         
@@ -49,14 +55,58 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
             return;
         }
         
-        if (lowerCmd.contains("switch camera") || lowerCmd.contains("change camera") || 
+        if (lowerCmd.contains("take photo") || lowerCmd.contains("take picture") || 
+            lowerCmd.contains("click photo") || lowerCmd.contains("click picture") ||
+            lowerCmd.contains("capture photo") || lowerCmd.contains("capture picture")) {
+            // Open camera and take photo automatically
+            takePhoto(context);
+        } else if (lowerCmd.contains("switch camera") || lowerCmd.contains("change camera") || 
             lowerCmd.contains("front camera") || lowerCmd.contains("back camera")) {
             // Use accessibility service to find and click camera switch button
             Intent switchIntent = new Intent("com.mvp.sarah.ACTION_SWITCH_CAMERA");
             context.sendBroadcast(switchIntent);
-            FeedbackProvider.speakAndToast(context, "Looking for camera switch button...");
+            // FeedbackProvider.speakAndToast(context, "Looking for camera switch button..."); // Removed as requested
         } else if (lowerCmd.contains("camera")) {
             openCamera(context);
+        }
+    }
+    
+    private void takePhoto(Context context) {
+        Log.d(TAG, "takePhoto called");
+        FeedbackProvider.speakAndToast(context, "Opening camera and taking photo.");
+        
+        try {
+            // Open the default camera app directly
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setPackage("com.motorola.camera3"); // Default Motorola camera
+            
+            context.startActivity(intent);
+            
+            // Wait for camera to load, then trigger photo capture
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
+                context.sendBroadcast(captureIntent);
+            }, 3000); // Wait 3 seconds for camera to load
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening camera app: " + e.getMessage());
+            // Fallback to generic camera intent
+            try {
+                Intent fallbackIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(fallbackIntent);
+                
+                // Wait for camera to load, then trigger photo capture
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    Intent captureIntent = new Intent("com.mvp.sarah.ACTION_TAKE_PHOTO_AUTO");
+                    context.sendBroadcast(captureIntent);
+                }, 3000);
+                
+            } catch (Exception fallbackError) {
+                Log.e(TAG, "Fallback camera also failed: " + fallbackError.getMessage());
+                FeedbackProvider.speakAndToast(context, "Could not open camera app.");
+            }
         }
     }
     
@@ -157,7 +207,7 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
                 }
             } else {
                 Log.w(TAG, "Camera ID " + newCameraId + " does not exist");
-                FeedbackProvider.speakAndToast(context, "Camera not available.");
+                // FeedbackProvider.speakAndToast(context, "Camera not available."); // Removed as requested
             }
             
         } catch (CameraAccessException e) {
@@ -177,7 +227,13 @@ public class OpenCameraHandler implements CommandHandler, CommandRegistry.Sugges
             "switch camera",
             "change camera",
             "front camera",
-            "back camera"
+            "back camera",
+            "take photo",
+            "take picture",
+            "click photo",
+            "click picture",
+            "capture photo",
+            "capture picture"
         );
     }
 

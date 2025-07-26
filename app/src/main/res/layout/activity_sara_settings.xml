@@ -175,31 +175,21 @@
                 android:textSize="20sp"
                 android:paddingBottom="8dp" />
 
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_manage_commands"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/search_commands"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Search commands..."
-                    android:drawableStart="@android:drawable/ic_menu_search"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                android:text="Manage Commands"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.MaterialComponents.Button"/>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_done_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                android:layout_marginBottom="16dp">
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/commands_recycler_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"/>
-            </androidx.cardview.widget.CardView>
+                android:text="Done"
+                android:layout_marginTop="24dp"
+                style="@style/Widget.MaterialComponents.Button"/>
         </LinearLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout> 

@@ -209,7 +209,7 @@
         <service android:name=".ImageGenerationService" />
         <activity android:name=".ImageDisplayActivity"
             android:exported="false" />
-        <activity android:name=".SaraSettingsActivity" android:exported="false" android:theme="@style/Theme.Sara.AppCompat" />
+        <activity android:name=".SaraSettingsActivity" android:exported="false" android:theme="@style/Theme.Sara.MaterialComponents" />
         <activity android:name=".AuthActivity" android:exported="true" android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity android:name=".PermissionsChecklistActivity"
     android:exported="false"
@@ -249,11 +249,6 @@
             </intent-filter>
         </receiver>
 
-        <service
-            android:name=".ShakeDetectionService"
-            android:exported="true"
-            android:foregroundServiceType="microphone" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -269,6 +264,8 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <activity android:name=".ManageCommandsActivity" android:exported="false" android:theme="@style/Theme.Sara.MaterialComponents" />
 
     </application>
 

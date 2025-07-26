@@ -47,11 +47,6 @@ public class SaraSettingsActivity extends AppCompatActivity {
     private static final String KEY_PPN_PATH = "porcupine_ppn_path";
     private static final String KEY_DISABLED_COMMANDS = "disabled_commands";
 
-    private EditText searchCommandsEditText;
-    private RecyclerView commandsRecyclerView;
-    private CommandCategoryAdapter commandAdapter;
-    private Map<String, List<String>> categorizedCommands = new TreeMap<>();
-
     private EditText editAccessKey;
     private Button btnSave;
     private Button btnGetAccessKey;
@@ -166,61 +161,32 @@ public class SaraSettingsActivity extends AppCompatActivity {
             }
         });
 
-        searchCommandsEditText = findViewById(R.id.search_commands);
-        commandsRecyclerView = findViewById(R.id.commands_recycler_view);
-        commandsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        // Gather and categorize commands, allowing commands to appear under all relevant categories
-        List<CommandHandler> handlers = CommandRegistry.getAllHandlers();
-        categorizedCommands.clear();
-        Map<String, Set<String>> commandToCategories = new HashMap<>();
-        for (CommandHandler handler : handlers) {
-            String category = handler.getClass().getSimpleName().replace("Handler", "");
-            if (handler instanceof CommandRegistry.SuggestionProvider) {
-                List<String> suggestions = ((CommandRegistry.SuggestionProvider) handler).getSuggestions();
-                Collections.sort(suggestions, String.CASE_INSENSITIVE_ORDER);
-                if (!categorizedCommands.containsKey(category)) {
-                    categorizedCommands.put(category, new ArrayList<>());
-                }
-                for (String command : suggestions) {
-                    categorizedCommands.get(category).add(command);
-                    if (!commandToCategories.containsKey(command)) {
-                        commandToCategories.put(command, new HashSet<>());
-                    }
-                    commandToCategories.get(command).add(category);
-                }
+        Button btnDone = findViewById(R.id.btn_done_settings);
+        btnDone.setOnClickListener(v -> {
+            String key = editAccessKey.getText().toString().trim();
+            ComponentName adminComponent = new ComponentName(this, SaraDeviceAdminReceiver.class);
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            boolean isAdmin = dpm.isAdminActive(adminComponent);
+            if (key.isEmpty()) {
+                Toast.makeText(this, "Please enter your Picovoice Access Key", Toast.LENGTH_SHORT).show();
+                return;
             }
-        }
-        commandAdapter = new CommandCategoryAdapter(categorizedCommands, commandToCategories);
-        commandsRecyclerView.setAdapter(commandAdapter);
-
-        // Filter logic
-        searchCommandsEditText.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterCommands(s.toString());
+            if (!isAdmin) {
+                Toast.makeText(this, "Please enable Device Admin", Toast.LENGTH_SHORT).show();
+                return;
             }
-            @Override
-            public void afterTextChanged(android.text.Editable s) {}
+            // All requirements met, proceed (finish or go to main)
+            Toast.makeText(this, "Setup complete!", Toast.LENGTH_SHORT).show();
+            finish();
         });
-    }
 
-    private void filterCommands(String query) {
-        Map<String, List<String>> filtered = new TreeMap<>();
-        for (String category : categorizedCommands.keySet()) {
-            List<String> filteredList = new ArrayList<>();
-            for (String command : categorizedCommands.get(category)) {
-                if (command.toLowerCase().contains(query.toLowerCase())) {
-                    filteredList.add(command);
-                }
-            }
-            if (!filteredList.isEmpty()) {
-                filtered.put(category, filteredList);
-            }
-        }
-        commandAdapter.setData(filtered);
+        // Add a button to open ManageCommandsActivity
+        Button btnManageCommands = findViewById(R.id.btn_manage_commands);
+        btnManageCommands.setOnClickListener(v -> {
+            Intent intent = new Intent(SaraSettingsActivity.this, ManageCommandsActivity.class);
+            startActivity(intent);
+            Toast.makeText(SaraSettingsActivity.this, "Opening Manage Commands...", Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override

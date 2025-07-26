@@ -251,10 +251,7 @@ public class MainActivity extends AppCompatActivity {
         Intent triggerServiceIntent = new Intent(this, TriggerDetectionService.class);
         ContextCompat.startForegroundService(this, triggerServiceIntent);
 
-        // Start ShakeDetectionService automatically
-        Intent shakeIntent = new Intent(this, ShakeDetectionService.class);
-        androidx.core.content.ContextCompat.startForegroundService(this, shakeIntent);
-        isInitialized = true;
+        // Remove all code that starts or references ShakeDetectionService
 
         // Scan and store all apps mapping on first launch
         if (!prefs.getBoolean("all_apps_scanned", false)) {
@@ -271,6 +268,12 @@ public class MainActivity extends AppCompatActivity {
             "update_check",
             androidx.work.ExistingPeriodicWorkPolicy.KEEP,
             updateWork);
+
+        // Check if started from shake detection notification
+        if (getIntent() != null && getIntent().getFlags() != 0) {
+            // ShakeDetectionService is already started above, just show confirmation
+            Toast.makeText(this, "Shake detection activated!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void scanAndStoreAllApps(Context context) {

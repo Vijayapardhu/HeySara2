@@ -19,7 +19,16 @@ public class CalculatorHandler implements CommandHandler, CommandRegistry.Sugges
 
     @Override
     public boolean canHandle(String command) {
-        return command.contains("calculate") || command.contains("plus") || command.contains("minus") || command.contains("times") || command.contains("divided by") || command.startsWith("what is");
+        String lower = command.toLowerCase().trim();
+        // Only match if it looks like a calculation
+        if (lower.startsWith("calculate") || lower.contains("plus") || lower.contains("minus") || lower.contains("times") || lower.contains("divided by")) {
+            return true;
+        }
+        // Only match 'what is' if it contains numbers and math operators
+        if (lower.startsWith("what is the value of ") || lower.startsWith("how much is")) {
+            return lower.matches(".*\\d.*[+\\-*/].*\\d.*");
+        }
+        return false;
     }
 
     @Override
@@ -46,7 +55,7 @@ public class CalculatorHandler implements CommandHandler, CommandRegistry.Sugges
     }
 
     private String extractExpression(String command) {
-        command = command.toLowerCase().replace("what is", "").replace("calculate", "").trim();
+        command = command.toLowerCase().replace("what is the value of ", "").replace("calculate", "").trim();
         command = command.replace("plus", "+").replace("minus", "-").replace("times", "*").replace("multiplied by", "*").replace("divided by", "/");
         command = command.replaceAll("[^0-9+*/. -]", "");
         return command.trim().isEmpty() ? null : command.trim();
