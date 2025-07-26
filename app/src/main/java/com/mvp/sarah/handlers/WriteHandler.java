@@ -117,18 +117,25 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
     }
 
     private void getApiKeyFromFirebase(String prompt, Context context, String contentType) {
+        Log.d(TAG, "Attempting to retrieve API key from Firebase...");
         DocumentReference docRef = db.collection("config").document("openrouter");
+        Log.d(TAG, "Firebase document path: config/openrouter");
         docRef.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
+                Log.d(TAG, "Firebase task successful. Document exists: " + document.exists());
                 if (document.exists()) {
+                    Log.d(TAG, "Document data: " + document.getData());
                     String apiKey = document.getString("api_key");
+                    Log.d(TAG, "Raw API key from Firebase: " + (apiKey != null ? "found" : "null"));
                     if (apiKey != null && !apiKey.isEmpty()) {
+                        apiKey = apiKey.trim(); // Clean the key
                         Log.d(TAG, "Retrieved OpenRouter API key from Firebase (length: " + apiKey.length() + ")");
                         // Log first and last few characters for debugging (but not the full key)
                         if (apiKey.length() > 10) {
                             Log.d(TAG, "API key format: " + apiKey.substring(0, 8) + "..." + apiKey.substring(apiKey.length() - 4));
                         }
+                        Log.d(TAG, "API key starts with 'sk-or-v1-': " + apiKey.startsWith("sk-or-v1-"));
                         callOpenRouterApi(prompt, context, contentType, apiKey);
                     } else {
                         Log.e(TAG, "OpenRouter API key is null or empty in Firebase");
@@ -146,6 +153,17 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
     }
 
     private void callOpenRouterApi(String prompt, Context context, String contentType, String apiKey) {
+        Log.d(TAG, "callOpenRouterApi called with API key length: " + (apiKey != null ? apiKey.length() : "null"));
+        
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            Log.e(TAG, "API key is null or empty in callOpenRouterApi");
+            FeedbackProvider.speakAndToast(context, "Sorry, the API key is not available.");
+            return;
+        }
+        
+        apiKey = apiKey.trim(); // Ensure no whitespace
+        Log.d(TAG, "Using API key for request (length: " + apiKey.length() + ")");
+        
         OkHttpClient client = new OkHttpClient();
         
         JSONObject body = new JSONObject();
@@ -163,16 +181,20 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
             return;
         }
 
+        String authHeader = "Bearer " + apiKey;
+        Log.d(TAG, "Authorization header: Bearer " + apiKey.substring(0, Math.min(12, apiKey.length())) + "...");
+        
         Request request = new Request.Builder()
                 .url(API_URL)
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
-                .addHeader("Authorization", "Bearer " + apiKey.trim())
+                .addHeader("Authorization", authHeader)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("HTTP-Referer", "https://github.com/your-app")
                 .addHeader("X-Title", "Sarah Assistant")
                 .build();
         
         Log.d(TAG, "Making OpenRouter API request to: " + API_URL);
+        Log.d(TAG, "Request headers: " + request.headers().toString());
         Log.d(TAG, "Request body: " + body.toString());
 
         Handler handler = new Handler(Looper.getMainLooper());

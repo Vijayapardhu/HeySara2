@@ -69,6 +69,24 @@ After setting up Firebase, try the write command:
 3. Say "write code"
 4. Check the logs for debug information
 
+**Expected Log Sequence:**
+```
+WriteHandler: Attempting to retrieve API key from Firebase...
+WriteHandler: Firebase document path: config/openrouter
+WriteHandler: Firebase task successful. Document exists: true
+WriteHandler: Document data: {api_key=sk-or-v1-...}
+WriteHandler: Raw API key from Firebase: found
+WriteHandler: Retrieved OpenRouter API key from Firebase (length: 64)
+WriteHandler: API key format: sk-or-v1...
+WriteHandler: API key starts with 'sk-or-v1-': true
+```
+
+**If you see "Document exists: false":**
+- The Firebase document doesn't exist
+- Double-check collection name: `config`
+- Double-check document name: `openrouter`
+- Make sure you created the document correctly
+
 ### 6. Debug Information
 
 The updated code now logs:
@@ -105,11 +123,35 @@ WriteHandler: Making OpenRouter API request to: https://openrouter.ai/api/v1/cha
 WriteHandler: OpenRouter API response: {"choices":[...]}
 ```
 
-## Example Log Output (401 Error)
+## Example Log Output (401 Error - No Auth Credentials)
+
+```
+WriteHandler: Attempting to retrieve API key from Firebase...
+WriteHandler: Firebase task successful. Document exists: false
+WriteHandler: OpenRouter config document does not exist in Firebase
+```
+
+## Example Log Output (401 Error - Invalid Key)
 
 ```
 WriteHandler: Retrieved OpenRouter API key from Firebase (length: 32)
 WriteHandler: API key format: invalid-...key
+WriteHandler: API key starts with 'sk-or-v1-': false
+WriteHandler: Authorization header: Bearer invalid-...
 WriteHandler: OpenRouter API error: 401
 WriteHandler: Error response body: {"error": {"message": "Invalid API key"}}
 ```
+
+## Quick Fix for "No auth credentials found"
+
+This specific error usually means:
+
+1. **Firebase document doesn't exist** - Check logs for "Document exists: false"
+2. **API key field is empty** - Check logs for "Raw API key from Firebase: null"
+3. **Field name is wrong** - Make sure the field is named exactly `api_key` (not `apikey` or `api-key`)
+
+**Double-check your Firebase setup:**
+- Collection: `config` (lowercase)
+- Document: `openrouter` (lowercase)
+- Field: `api_key` (underscore, not hyphen)
+- Value: Your actual OpenRouter API key starting with `sk-or-v1-`
