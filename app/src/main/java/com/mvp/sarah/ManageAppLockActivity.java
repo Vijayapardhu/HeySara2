@@ -98,7 +98,9 @@ public class ManageAppLockActivity extends AppCompatActivity {
         sliderLockDuration.addOnChangeListener((slider, value, fromUser) -> {
             lockDuration = (int) value;
             labelLockDuration.setText(lockDuration + " minutes");
-            // TODO: Save lock duration to preferences
+            // Save lock duration to preferences
+            SharedPreferences lockPrefs = getSharedPreferences("app_lock_settings", Context.MODE_PRIVATE);
+            lockPrefs.edit().putInt("lock_duration", lockDuration).apply();
         });
         // Change password
         btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
