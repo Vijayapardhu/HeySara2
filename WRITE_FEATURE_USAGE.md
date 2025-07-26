@@ -56,7 +56,8 @@ The WriteHandler allows you to generate and automatically type text content into
 
 ### Technical Details
 
-- Uses Google Gemini AI API for content generation
+- Uses OpenRouter AI API for content generation
+- API key is securely retrieved from Firebase configuration
 - Works with any text field that supports accessibility services
 - Content is generated in the background and typed automatically
 - Provides voice feedback during the process
@@ -78,5 +79,24 @@ The WriteHandler allows you to generate and automatically type text content into
 - Use more specific commands (e.g., "write Python code" instead of just "write code")
 - The AI adapts based on your specific request
 
+### Firebase Configuration
+
+For the WriteHandler to work, you need to configure the OpenRouter API key in Firebase:
+
+1. **Firebase Console Setup**:
+   - Go to your Firebase project console
+   - Navigate to Firestore Database
+   - Create a collection called `config`
+   - Create a document called `openrouter`
+   - Add a field: `api_key` (string) with your OpenRouter API key
+
+2. **Document Structure**:
+   ```
+   Collection: config
+   Document: openrouter
+   Fields:
+     - api_key: "sk-or-v1-your-actual-openrouter-api-key-here"
+   ```
+
 ### Privacy Note
-Content generation requires internet connection and uses Google's Gemini API. Generated content is processed according to Google's privacy policies.
+Content generation requires internet connection and uses OpenRouter API. Generated content is processed according to OpenRouter's privacy policies. API keys are securely stored in Firebase and retrieved at runtime.

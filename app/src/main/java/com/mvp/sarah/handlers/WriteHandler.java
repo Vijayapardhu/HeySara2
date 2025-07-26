@@ -8,6 +8,9 @@ import android.util.Log;
 import com.mvp.sarah.CommandHandler;
 import com.mvp.sarah.CommandRegistry;
 import com.mvp.sarah.FeedbackProvider;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import okhttp3.*;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,8 +24,8 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
 
     private static final String TAG = "WriteHandler";
     // OpenRouter API configuration
-    private static final String API_KEY = "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";
     private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     @Override
     public boolean canHandle(String command) {
@@ -49,8 +52,8 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         
         FeedbackProvider.speakAndToast(context, "Writing " + contentType + "...");
         
-        // Generate content using OpenRouter API
-        callOpenRouterApi(prompt, context, contentType);
+        // Get API key from Firebase and then call OpenRouter API
+        getApiKeyFromFirebase(prompt, context, contentType);
     }
 
     private String extractContentType(String command) {
@@ -113,7 +116,32 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         }
     }
 
-    private void callOpenRouterApi(String prompt, Context context, String contentType) {
+    private void getApiKeyFromFirebase(String prompt, Context context, String contentType) {
+        DocumentReference docRef = db.collection("config").document("openrouter");
+        docRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    String apiKey = document.getString("api_key");
+                    if (apiKey != null && !apiKey.isEmpty()) {
+                        Log.d(TAG, "Retrieved OpenRouter API key from Firebase");
+                        callOpenRouterApi(prompt, context, contentType, apiKey);
+                    } else {
+                        Log.e(TAG, "OpenRouter API key is null or empty in Firebase");
+                        FeedbackProvider.speakAndToast(context, "Sorry, the API key is not configured.");
+                    }
+                } else {
+                    Log.e(TAG, "OpenRouter config document does not exist in Firebase");
+                    FeedbackProvider.speakAndToast(context, "Sorry, the service is not configured.");
+                }
+            } else {
+                Log.e(TAG, "Error getting OpenRouter config from Firebase", task.getException());
+                FeedbackProvider.speakAndToast(context, "Sorry, there was an error accessing the configuration.");
+            }
+        });
+    }
+
+    private void callOpenRouterApi(String prompt, Context context, String contentType, String apiKey) {
         OkHttpClient client = new OkHttpClient();
         
         JSONObject body = new JSONObject();
@@ -134,7 +162,7 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         Request request = new Request.Builder()
                 .url(API_URL)
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
-                .addHeader("Authorization", "Bearer " + API_KEY)
+                .addHeader("Authorization", "Bearer " + apiKey)
                 .addHeader("Content-Type", "application/json")
                 .build();
 
