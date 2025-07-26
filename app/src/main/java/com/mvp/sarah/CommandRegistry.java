@@ -220,6 +220,7 @@ public class CommandRegistry {
             register(new com.mvp.sarah.handlers.ReadNewNotificationHandler());
             register(new com.mvp.sarah.handlers.UpdateAssistantHandler());
             register(new com.mvp.sarah.handlers.GeminiHandler());
+            register(new com.mvp.sarah.handlers.WriteHandler());
             register(new com.mvp.sarah.handlers.OnlineTestHandler());
             
             // Don't set fallbackHandler here, keep the default FallbackHandler
