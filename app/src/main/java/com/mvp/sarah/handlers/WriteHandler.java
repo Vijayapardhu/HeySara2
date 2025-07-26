@@ -2,17 +2,17 @@ package com.mvp.sarah.handlers;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import com.mvp.sarah.CommandHandler;
 import com.mvp.sarah.CommandRegistry;
 import com.mvp.sarah.FeedbackProvider;
+import okhttp3.*;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -20,9 +20,9 @@ import java.util.Locale;
 public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionProvider {
 
     private static final String TAG = "WriteHandler";
-    // Using the same API key as GeminiHandler
-    private static final String API_KEY = "AIzaSyAH4ljHr5OTLWBDIOSPW1xzNzpxNN3L7kA";
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    // OpenRouter API configuration
+    private static final String API_KEY = "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";
+    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     @Override
     public boolean canHandle(String command) {
@@ -49,30 +49,8 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         
         FeedbackProvider.speakAndToast(context, "Writing " + contentType + "...");
         
-        // Generate content using Gemini API in a background thread
-        new Thread(() -> {
-            try {
-                String generatedText = generateContent(prompt);
-                
-                if (generatedText != null && !generatedText.isEmpty()) {
-                    // Type the generated text into the current text field
-                    Intent typeIntent = new Intent(TypeTextHandler.ACTION_TYPE_TEXT);
-                    typeIntent.putExtra(TypeTextHandler.EXTRA_TEXT, generatedText);
-                    context.sendBroadcast(typeIntent);
-                    
-                    // Provide feedback
-                    String feedback = contentType.equals("unknown") ? 
-                        "Text generated and typed" : 
-                        contentType + " generated and typed";
-                    FeedbackProvider.speakAndToast(context, feedback);
-                } else {
-                    FeedbackProvider.speakAndToast(context, "Sorry, I couldn't generate the content.");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error generating content", e);
-                FeedbackProvider.speakAndToast(context, "Sorry, there was an error generating the content.");
-            }
-        }).start();
+        // Generate content using OpenRouter API
+        callOpenRouterApi(prompt, context, contentType);
     }
 
     private String extractContentType(String command) {
@@ -135,54 +113,100 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         }
     }
 
-    private String generateContent(String prompt) throws Exception {
-        URL url = new URL(API_URL);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        conn.setDoOutput(true);
-
-        // Create the JSON request body
-        String jsonInputString = "{\"contents\":[{\"parts\":[{\"text\":\"" + JSONObject.quote(prompt) + "\"}]}]}";
-
-        try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
+    private void callOpenRouterApi(String prompt, Context context, String contentType) {
+        OkHttpClient client = new OkHttpClient();
+        
+        JSONObject body = new JSONObject();
+        try {
+            body.put("model", "openai/gpt-3.5-turbo");
+            JSONArray messages = new JSONArray();
+            JSONObject userMsg = new JSONObject();
+            userMsg.put("role", "user");
+            userMsg.put("content", prompt);
+            messages.put(userMsg);
+            body.put("messages", messages);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON error", e);
+            FeedbackProvider.speakAndToast(context, "Sorry, there was an error preparing the request.");
+            return;
         }
 
-        int responseCode = conn.getResponseCode();
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder response = new StringBuilder();
-                String responseLine;
-                while ((responseLine = br.readLine()) != null) {
-                    response.append(responseLine.trim());
-                }
-                
-                // Parse the JSON response
-                JSONObject jsonResponse = new JSONObject(response.toString());
-                String text = jsonResponse.getJSONArray("candidates")
-                                          .getJSONObject(0)
-                                          .getJSONObject("content")
-                                          .getJSONArray("parts")
-                                          .getJSONObject(0)
-                                          .getString("text");
+        Request request = new Request.Builder()
+                .url(API_URL)
+                .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
+                .addHeader("Authorization", "Bearer " + API_KEY)
+                .addHeader("Content-Type", "application/json")
+                .build();
 
-                return text;
+        Handler handler = new Handler(Looper.getMainLooper());
+        Runnable timeoutRunnable = () -> {
+            // Fallback logic if AI is too slow
+            FeedbackProvider.speakAndToast(context, "Sorry, the content generation timed out.");
+        };
+        handler.postDelayed(timeoutRunnable, 15000); // 15 seconds for content generation
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "OpenRouter API call failed", e);
+                handler.removeCallbacks(timeoutRunnable);
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> {
+                    FeedbackProvider.speakAndToast(context, "Sorry, there was an error generating the content.");
+                });
             }
-        } else {
-            String errorMessage = "Error from API: " + responseCode + " " + conn.getResponseMessage();
-            Log.e(TAG, errorMessage);
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                StringBuilder errorResponse = new StringBuilder();
-                String responseLine;
-                while ((responseLine = br.readLine()) != null) {
-                    errorResponse.append(responseLine.trim());
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                handler.removeCallbacks(timeoutRunnable);
+                if (response.isSuccessful()) {
+                    String responseBody = response.body().string();
+                    Log.d(TAG, "OpenRouter API response: " + responseBody);
+                    String generatedText = parseOpenRouterResponse(responseBody);
+                    if (generatedText != null && !generatedText.isEmpty()) {
+                        Handler mainHandler = new Handler(Looper.getMainLooper());
+                        mainHandler.post(() -> {
+                            // Type the generated text into the current text field
+                            Intent typeIntent = new Intent(TypeTextHandler.ACTION_TYPE_TEXT);
+                            typeIntent.putExtra(TypeTextHandler.EXTRA_TEXT, generatedText);
+                            context.sendBroadcast(typeIntent);
+                            
+                            // Provide feedback
+                            String feedback = contentType.equals("unknown") ? 
+                                "Text generated and typed" : 
+                                contentType + " generated and typed";
+                            FeedbackProvider.speakAndToast(context, feedback);
+                        });
+                    } else {
+                        Handler mainHandler = new Handler(Looper.getMainLooper());
+                        mainHandler.post(() -> {
+                            FeedbackProvider.speakAndToast(context, "Sorry, I couldn't generate the content.");
+                        });
+                    }
+                } else {
+                    Log.e(TAG, "OpenRouter API error: " + response.code());
+                    Handler mainHandler = new Handler(Looper.getMainLooper());
+                    mainHandler.post(() -> {
+                        FeedbackProvider.speakAndToast(context, "Sorry, there was an error with the content generation service.");
+                    });
                 }
-                Log.e(TAG, "Error details: " + errorResponse.toString());
             }
-            throw new Exception("API call failed: " + errorMessage);
+        });
+    }
+
+    private String parseOpenRouterResponse(String responseBody) {
+        try {
+            JSONObject jsonResponse = new JSONObject(responseBody);
+            JSONArray choices = jsonResponse.getJSONArray("choices");
+            if (choices.length() > 0) {
+                JSONObject choice = choices.getJSONObject(0);
+                JSONObject message = choice.getJSONObject("message");
+                return message.getString("content").trim();
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing OpenRouter response", e);
         }
+        return null;
     }
 
     @Override
