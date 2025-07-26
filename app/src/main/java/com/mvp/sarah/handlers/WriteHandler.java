@@ -39,12 +39,21 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
                lowerCmd.contains("write text") ||
                lowerCmd.contains("write letter") ||
                lowerCmd.contains("write response") ||
-               lowerCmd.contains("write reply");
+               lowerCmd.contains("write reply") ||
+               lowerCmd.equals("test firebase connection"); // Debug command
     }
 
     @Override
     public void handle(Context context, String command) {
         String lowerCmd = command.toLowerCase(Locale.ROOT);
+        
+        // Handle debug command
+        if (lowerCmd.equals("test firebase connection")) {
+            Log.d(TAG, "Firebase connection test command received");
+            FeedbackProvider.speakAndToast(context, "Testing Firebase connection...");
+            testFirebaseConnection(context);
+            return;
+        }
         
         // Extract the type of content to write
         String contentType = extractContentType(lowerCmd);
@@ -53,6 +62,7 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         FeedbackProvider.speakAndToast(context, "Writing " + contentType + "...");
         
         // Get API key from Firebase and then call OpenRouter API
+        Log.d(TAG, "Starting Firebase API key retrieval process...");
         getApiKeyFromFirebase(prompt, context, contentType);
     }
 
@@ -118,9 +128,25 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
 
     private void getApiKeyFromFirebase(String prompt, Context context, String contentType) {
         Log.d(TAG, "Attempting to retrieve API key from Firebase...");
+        Log.d(TAG, "FirebaseFirestore instance: " + (db != null ? "initialized" : "null"));
+        
         DocumentReference docRef = db.collection("config").document("openrouter");
         Log.d(TAG, "Firebase document path: config/openrouter");
+        Log.d(TAG, "DocumentReference created: " + (docRef != null ? "success" : "failed"));
+        
+        // Set up a timeout for Firebase
+        Handler timeoutHandler = new Handler(Looper.getMainLooper());
+        Runnable timeoutRunnable = () -> {
+            Log.e(TAG, "Firebase retrieval timed out after 10 seconds");
+            FeedbackProvider.speakAndToast(context, "Sorry, configuration retrieval timed out.");
+        };
+        timeoutHandler.postDelayed(timeoutRunnable, 10000); // 10 seconds timeout
+        
         docRef.get().addOnCompleteListener(task -> {
+            timeoutHandler.removeCallbacks(timeoutRunnable); // Cancel timeout
+            Log.d(TAG, "Firebase get() callback triggered");
+            Log.d(TAG, "Task successful: " + task.isSuccessful());
+            Log.d(TAG, "Task exception: " + task.getException());
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
                 Log.d(TAG, "Firebase task successful. Document exists: " + document.exists());
@@ -276,6 +302,36 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
             Log.e(TAG, "Error parsing OpenRouter response", e);
         }
         return null;
+    }
+
+    // Test method to debug Firebase connectivity
+    public void testFirebaseConnection(Context context) {
+        Log.d(TAG, "=== FIREBASE CONNECTION TEST ===");
+        Log.d(TAG, "FirebaseFirestore instance: " + (db != null ? "initialized" : "null"));
+        
+        DocumentReference docRef = db.collection("config").document("openrouter");
+        docRef.get().addOnCompleteListener(task -> {
+            Log.d(TAG, "=== FIREBASE TEST RESULT ===");
+            Log.d(TAG, "Task successful: " + task.isSuccessful());
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                Log.d(TAG, "Document exists: " + document.exists());
+                if (document.exists()) {
+                    Log.d(TAG, "Document data: " + document.getData());
+                    String apiKey = document.getString("api_key");
+                    Log.d(TAG, "API key present: " + (apiKey != null && !apiKey.isEmpty()));
+                    if (apiKey != null) {
+                        Log.d(TAG, "API key length: " + apiKey.length());
+                        Log.d(TAG, "API key starts with sk-or-v1: " + apiKey.startsWith("sk-or-v1-"));
+                    }
+                } else {
+                    Log.e(TAG, "Document does not exist!");
+                }
+            } else {
+                Log.e(TAG, "Firebase task failed: " + task.getException());
+            }
+            Log.d(TAG, "=== FIREBASE TEST END ===");
+        });
     }
 
     @Override
