@@ -124,7 +124,11 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
                 if (document.exists()) {
                     String apiKey = document.getString("api_key");
                     if (apiKey != null && !apiKey.isEmpty()) {
-                        Log.d(TAG, "Retrieved OpenRouter API key from Firebase");
+                        Log.d(TAG, "Retrieved OpenRouter API key from Firebase (length: " + apiKey.length() + ")");
+                        // Log first and last few characters for debugging (but not the full key)
+                        if (apiKey.length() > 10) {
+                            Log.d(TAG, "API key format: " + apiKey.substring(0, 8) + "..." + apiKey.substring(apiKey.length() - 4));
+                        }
                         callOpenRouterApi(prompt, context, contentType, apiKey);
                     } else {
                         Log.e(TAG, "OpenRouter API key is null or empty in Firebase");
@@ -162,9 +166,14 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         Request request = new Request.Builder()
                 .url(API_URL)
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
-                .addHeader("Authorization", "Bearer " + apiKey)
+                .addHeader("Authorization", "Bearer " + apiKey.trim())
                 .addHeader("Content-Type", "application/json")
+                .addHeader("HTTP-Referer", "https://github.com/your-app")
+                .addHeader("X-Title", "Sarah Assistant")
                 .build();
+        
+        Log.d(TAG, "Making OpenRouter API request to: " + API_URL);
+        Log.d(TAG, "Request body: " + body.toString());
 
         Handler handler = new Handler(Looper.getMainLooper());
         Runnable timeoutRunnable = () -> {
@@ -213,9 +222,19 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
                     }
                 } else {
                     Log.e(TAG, "OpenRouter API error: " + response.code());
+                    // Log response body for debugging 401 errors
+                    try {
+                        String errorBody = response.body().string();
+                        Log.e(TAG, "Error response body: " + errorBody);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Could not read error response body", e);
+                    }
                     Handler mainHandler = new Handler(Looper.getMainLooper());
                     mainHandler.post(() -> {
-                        FeedbackProvider.speakAndToast(context, "Sorry, there was an error with the content generation service.");
+                        String errorMessage = response.code() == 401 ? 
+                            "Sorry, authentication failed. Please check the API key configuration." :
+                            "Sorry, there was an error with the content generation service.";
+                        FeedbackProvider.speakAndToast(context, errorMessage);
                     });
                 }
             }
