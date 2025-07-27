@@ -52,6 +52,16 @@ public class VoiceBarsView extends View {
         }
     }
 
+    public void setRms(float rms) {
+        // Clamp rms to a reasonable range (e.g., 0 to 10)
+        float clamped = Math.max(0f, Math.min(rms, 10f));
+        float norm = clamped / 10f; // 0.0 to 1.0
+        for (int i = 0; i < BAR_COUNT; i++) {
+            barHeights[i] = minHeights[i] + (maxHeights[i] - minHeights[i]) * norm;
+        }
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);

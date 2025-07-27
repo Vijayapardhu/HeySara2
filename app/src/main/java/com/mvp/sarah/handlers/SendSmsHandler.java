@@ -14,6 +14,7 @@ import com.mvp.sarah.FeedbackProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import android.os.Handler;
 
 public class SendSmsHandler implements CommandHandler, CommandRegistry.SuggestionProvider {
     private static final List<String> COMMANDS = Arrays.asList(
@@ -127,7 +128,12 @@ public class SendSmsHandler implements CommandHandler, CommandRegistry.Suggestio
         pendingMessage = message;
         awaitingConfirmation = true;
         String confirmation = "Do you want to send this message to " + contactName + ": " + message + "?";
-        FeedbackProvider.speakAndToast(context, confirmation);
+        FeedbackProvider.speakAndToastWithCallback(context, confirmation, () -> {
+            // Start speech recognition after TTS prompt
+            Intent listenIntent = new Intent("com.mvp.sarah.ACTION_START_COMMAND_LISTENING");
+            listenIntent.setPackage(context.getPackageName());
+            context.startService(listenIntent);
+        });
     }
     
     private void sendSmsDirectly(Context context, String number, String message, String contactName) {

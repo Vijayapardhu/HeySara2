@@ -1,27 +1,36 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="180dp"
-    android:layout_height="180dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:layout_gravity="center">
 
-    <!-- The new background glow -->
-    <ImageView
-        android:id="@+id/glow_effect"
+    <!-- Dimmed background -->
+    <View
+        android:id="@+id/dim_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/glow_effect_bg"
-        android:alpha="0.9" />
+        android:background="#80000000" />
 
     <!-- The main bubble container for the swing animation -->
     <FrameLayout
         android:id="@+id/bubble_container"
-        android:layout_width="128dp"
-        android:layout_height="128dp"
-        android:layout_gravity="center">
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="96dp">
+
+        <!-- Glow is now inside the bubble container -->
+        <ImageView
+            android:id="@+id/glow_effect"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/glow_effect_bg"
+            android:alpha="0.7" />
 
         <ImageView
             android:id="@+id/pulsing_circle_bg"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="128dp"
+            android:layout_height="128dp"
+            android:layout_gravity="center"
             android:src="@drawable/interactive_circle_bg" />
 
         <com.mvp.sarah.VoiceBarsView

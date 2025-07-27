@@ -57,7 +57,7 @@ public class SearchHandler implements CommandHandler, CommandRegistry.Suggestion
             isFetchingKey = true;
         }
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("app_config").document("gemini").get()
+        db.collection("config").document("gemini").get()
             .addOnSuccessListener(document -> {
                 if (document.exists() && document.contains("api_key")) {
                     apiKey = document.getString("api_key");

@@ -12,9 +12,9 @@ android {
         applicationId "com.mvp.sarah"
         minSdk 26
         targetSdk 36
-        versionCode 3
-        versionName "1.2"
-        buildConfigField "String", "GEMINI_API_KEY", "\"AIzaSyAH4ljHr5OTLWBDIOSPW1xzNzpxNN3L7kA\""
+        versionCode 4
+        versionName "1.3"
+        buildConfigField "String", "GEMINI_API_KEY", "\"AIzaSyAeiVGbZVsl6-2zxpUlUHKgL_pqC4TvuoA\""
     }
 
     buildFeatures {

@@ -6,6 +6,7 @@ import ai.picovoice.porcupine.PorcupineManagerCallback;
 
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
+import android.animation.Animator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -51,6 +52,8 @@ import android.content.SharedPreferences;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 
 public class SaraVoiceService extends Service implements AudioManager.OnAudioFocusChangeListener, CommandRegistry.CommandListener {
     public static final String ACTION_COMMAND_FINISHED = "com.mvp.sarah.ACTION_COMMAND_FINISHED";
@@ -188,8 +191,8 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         bubbleOverlayView = inflater.inflate(R.layout.assistant_bubble, null);
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.MATCH_PARENT, // was WRAP_CONTENT
+                WindowManager.LayoutParams.MATCH_PARENT, // was WRAP_CONTENT
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
@@ -202,12 +205,34 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         params.y = 100;
 
+        // UI references
+        // Remove earlier declarations of bubbleContainer, glowEffect, dimBackground
+        // Only declare them as final after addView
+        bubbleOverlayView = inflater.inflate(R.layout.assistant_bubble, null);
+        // Set root overlay alpha to 0 before adding
+        bubbleOverlayView.setAlpha(0f);
         bubbleWindowManager.addView(bubbleOverlayView, params);
 
-        // UI references
-        View bubbleContainer = bubbleOverlayView.findViewById(R.id.bubble_container);
-        View glowEffect = bubbleOverlayView.findViewById(R.id.glow_effect);
+        // Get references from the actual overlay view (final for lambda)
+        final View bubbleContainer = bubbleOverlayView.findViewById(R.id.bubble_container);
+        final View glowEffect = bubbleOverlayView.findViewById(R.id.glow_effect);
+        final View dimBackground = bubbleOverlayView.findViewById(R.id.dim_background);
         com.mvp.sarah.VoiceBarsView voiceLines = bubbleOverlayView.findViewById(R.id.voice_lines);
+
+        // Apply blur to dim background if supported
+        if (dimBackground != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            dimBackground.setRenderEffect(RenderEffect.createBlurEffect(24f, 24f, Shader.TileMode.CLAMP));
+        }
+
+        // Start entry animation after view is attached
+        bubbleOverlayView.post(() -> {
+            // Fade in the root overlay first
+            bubbleOverlayView.animate().alpha(1f).setDuration(150).withEndAction(() -> {
+                if (dimBackground != null) dimBackground.animate().alpha(1f).setDuration(350).start();
+                if (bubbleContainer != null) bubbleContainer.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(350).start();
+                if (glowEffect != null) glowEffect.animate().alpha(0.7f).scaleX(1f).scaleY(1f).setDuration(350).start();
+            }).start();
+        });
 
         // Start listening and animate
         startBubbleListening(bubbleContainer, glowEffect, voiceLines);
@@ -255,7 +280,11 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
             @Override
             public void onBeginningOfSpeech() {}
             @Override
-            public void onRmsChanged(float rmsdB) {}
+            public void onRmsChanged(float rmsdB) {
+                if (voiceLines != null) {
+                    voiceLines.setRms(rmsdB);
+                }
+            }
             @Override
             public void onBufferReceived(byte[] buffer) {}
             @Override
@@ -308,7 +337,12 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
     }
 
     private void removeBubbleOverlay() {
-        // Stop animations first
+        // UI references for exit animation
+        View bubbleContainer = bubbleOverlayView != null ? bubbleOverlayView.findViewById(R.id.bubble_container) : null;
+        View glowEffect = bubbleOverlayView != null ? bubbleOverlayView.findViewById(R.id.glow_effect) : null;
+        View dimBackground = bubbleOverlayView != null ? bubbleOverlayView.findViewById(R.id.dim_background) : null;
+
+        // Stop pulse animations first
         try {
             if (glowPulseAnimator != null) {
                 glowPulseAnimator.cancel();
@@ -322,6 +356,24 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
             Log.e("SaraVoiceService", "Error canceling animations: " + e.getMessage());
         }
 
+        // Exit animation: fade out and scale down, then remove overlay
+        if (bubbleContainer != null && glowEffect != null && dimBackground != null) {
+            bubbleContainer.animate().alpha(0f).scaleX(0.7f).scaleY(0.7f).setDuration(250).setListener(new Animator.AnimatorListener() {
+                @Override public void onAnimationStart(Animator animation) {}
+                @Override public void onAnimationEnd(Animator animation) {
+                    actuallyRemoveBubbleOverlay();
+                }
+                @Override public void onAnimationCancel(Animator animation) { actuallyRemoveBubbleOverlay(); }
+                @Override public void onAnimationRepeat(Animator animation) {}
+            }).start();
+            glowEffect.animate().alpha(0f).scaleX(0.7f).scaleY(0.7f).setDuration(250).start();
+            dimBackground.animate().alpha(0f).setDuration(250).start();
+        } else {
+            actuallyRemoveBubbleOverlay();
+        }
+    }
+
+    private void actuallyRemoveBubbleOverlay() {
         // Destroy speech recognizer
         try {
             if (bubbleRecognizer != null) {
@@ -348,24 +400,7 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         Log.d("SaraVoiceService", "State reset. Ready for next command.");
 
         // Restart Porcupine listening
-        try {
-            if (porcupineManager != null) {
-                porcupineManager.start();
-                Log.d("Porcupine", "Porcupine restarted after command processing");
-            } else {
-                Log.w("Porcupine", "porcupineManager is null, attempting to reinitialize");
-                startPorcupineListening();
-            }
-        } catch (PorcupineException e) {
-            Log.e("Porcupine", "Error restarting Porcupine: " + e.getMessage());
-            // Try to reinitialize if restart fails
-            try {
-                porcupineManager = null;
-                startPorcupineListening();
-            } catch (Exception ex) {
-                Log.e("Porcupine", "Failed to reinitialize Porcupine: " + ex.getMessage());
-            }
-        }
+        startPorcupineListening();
     }
 
     private String getErrorText(int errorCode) {
