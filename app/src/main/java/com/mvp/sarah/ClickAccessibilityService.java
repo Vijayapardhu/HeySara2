@@ -266,6 +266,11 @@ public class ClickAccessibilityService extends AccessibilityService {
         info.flags = AccessibilityServiceInfo.DEFAULT |
                 AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS |
                 AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
+        
+        // Auto-discover quick settings tiles after a delay
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            discoverQuickSettingsTiles();
+        }, 3000); // Wait 3 seconds for service to be fully connected
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.mvp.sarah.ACTION_CLICK_POINT");
         filter.addAction("com.mvp.sarah.ACTION_TYPE_TEXT");
@@ -1984,56 +1989,95 @@ public class ClickAccessibilityService extends AccessibilityService {
         Log.d(TAG, "Triggering quick settings tile: " + tileKeyword);
         // Open quick settings panel first
         performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+        
+        // Use a more dynamic approach with retries
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                boolean clicked = clickQuickSettingsTileByLabel(root, tileKeyword);
-                root.recycle();
-                if (!clicked) {
-                    FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings");
-                }
-            } else {
-                FeedbackProvider.speakAndToast(this, "Could not access quick settings panel");
+            attemptQuickSettingsClick(tileKeyword, 0);
+        }, 500); // Increased initial delay
+    }
+
+    private void attemptQuickSettingsClick(final String tileKeyword, int attempt) {
+        if (attempt >= 5) {
+            FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings after multiple attempts");
+            dismissQuickSettings();
+            return;
+        }
+
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root != null) {
+            boolean clicked = clickQuickSettingsTileByLabel(root, tileKeyword);
+            root.recycle();
+            if (clicked) {
+                dismissQuickSettings();
+                return;
             }
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-            }
-        }, 200);
+        }
+
+        // Retry after a short delay
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            attemptQuickSettingsClick(tileKeyword, attempt + 1);
+        }, 300);
+    }
+
+    private void dismissQuickSettings() {
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+        }
     }
 
     public void triggerQuickSettingsTileWithState(final String tileKeyword, final boolean shouldTurnOn) {
         Log.d(TAG, "Triggering quick settings tile with state: " + tileKeyword + " (shouldTurnOn: " + shouldTurnOn + ")");
         // Open quick settings panel first
         performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+        
+        // Use a more dynamic approach with retries
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                boolean clicked = clickQuickSettingsTileByLabelAndState(root, tileKeyword, shouldTurnOn);
-                root.recycle();
-                if (!clicked) {
-                    FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings");
-                }
-            } else {
-                FeedbackProvider.speakAndToast(this, "Could not access quick settings panel");
+            attemptQuickSettingsClickWithState(tileKeyword, shouldTurnOn, 0);
+        }, 500); // Increased initial delay
+    }
+
+    private void attemptQuickSettingsClickWithState(final String tileKeyword, final boolean shouldTurnOn, int attempt) {
+        if (attempt >= 5) {
+            FeedbackProvider.speakAndToast(this, "Could not find " + tileKeyword + " in quick settings after multiple attempts");
+            dismissQuickSettings();
+            return;
+        }
+
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root != null) {
+            boolean clicked = clickQuickSettingsTileByLabelAndState(root, tileKeyword, shouldTurnOn);
+            root.recycle();
+            if (clicked) {
+                dismissQuickSettings();
+                return;
             }
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-            }
-        }, 200);
+        }
+
+        // Retry after a short delay
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            attemptQuickSettingsClickWithState(tileKeyword, shouldTurnOn, attempt + 1);
+        }, 300);
     }
 
     private boolean clickQuickSettingsTileByLabel(AccessibilityNodeInfo node, String label) {
         if (node == null) return false;
         CharSequence text = node.getText();
         CharSequence desc = node.getContentDescription();
+        
         if (node.isClickable() && node.isVisibleToUser()) {
-            if ((text != null && text.toString().equalsIgnoreCase(label)) ||
-                (desc != null && desc.toString().equalsIgnoreCase(label))) {
+            String textStr = text != null ? text.toString().toLowerCase() : "";
+            String descStr = desc != null ? desc.toString().toLowerCase() : "";
+            String labelLower = label.toLowerCase();
+            
+            // More flexible matching
+            if (textStr.contains(labelLower) || descStr.contains(labelLower) ||
+                textStr.equals(labelLower) || descStr.equals(labelLower)) {
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 FeedbackProvider.speakAndToast(this, label + " toggled");
                 return true;
             }
         }
+        
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
             if (clickQuickSettingsTileByLabel(child, label)) {
@@ -2053,9 +2097,15 @@ public class ClickAccessibilityService extends AccessibilityService {
             isToggle = true;
             isOn = node.isChecked();
         }
+        
         if (node.isClickable() && node.isVisibleToUser()) {
-            if ((text != null && text.toString().equalsIgnoreCase(label)) ||
-                (desc != null && desc.toString().equalsIgnoreCase(label))) {
+            String textStr = text != null ? text.toString().toLowerCase() : "";
+            String descStr = desc != null ? desc.toString().toLowerCase() : "";
+            String labelLower = label.toLowerCase();
+            
+            // More flexible matching
+            if (textStr.contains(labelLower) || descStr.contains(labelLower) ||
+                textStr.equals(labelLower) || descStr.equals(labelLower)) {
                 if (isToggle && isOn == shouldTurnOn) {
                     FeedbackProvider.speakAndToast(this, label + " is already " + (isOn ? "on" : "off"));
                     return true;
@@ -2065,6 +2115,7 @@ public class ClickAccessibilityService extends AccessibilityService {
                 return true;
             }
         }
+        
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
             if (clickQuickSettingsTileByLabelAndState(child, label, shouldTurnOn)) {
@@ -2832,15 +2883,44 @@ public class ClickAccessibilityService extends AccessibilityService {
             if (text != null && text.length() > 0) {
                 Log.d(TAG, "Available Quick Settings Tile: '" + text + "'");
                 FeedbackProvider.speakAndToast(this, "Found tile: " + text);
+                storeTileInfo(text.toString(), "");
             } else if (desc != null && desc.length() > 0) {
                 Log.d(TAG, "Available Quick Settings Tile: '" + desc + "'");
                 FeedbackProvider.speakAndToast(this, "Found tile: " + desc);
+                storeTileInfo("", desc.toString());
             }
         }
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
             listAvailableTiles(child);
         }
+    }
+
+    private void storeTileInfo(String text, String description) {
+        SharedPreferences prefs = getSharedPreferences("QuickSettingsPrefs", Context.MODE_PRIVATE);
+        Set<String> availableTiles = prefs.getStringSet("available_tiles", new HashSet<>());
+        Set<String> newTiles = new HashSet<>(availableTiles);
+        
+        if (!text.isEmpty()) newTiles.add(text.toLowerCase());
+        if (!description.isEmpty()) newTiles.add(description.toLowerCase());
+        
+        prefs.edit().putStringSet("available_tiles", newTiles).apply();
+    }
+
+    private void discoverQuickSettingsTiles() {
+        Log.d(TAG, "Auto-discovering quick settings tiles");
+        performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                listAvailableTiles(root);
+                root.recycle();
+                Log.d(TAG, "Quick settings tiles discovery completed");
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
+        }, 1000);
     }
 
     // --- Auto Photo Capture ---

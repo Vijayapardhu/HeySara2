@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/manage_commands_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    card_view:cardCornerRadius="18dp"
+    card_view:cardElevation="6dp"
+    android:background="@drawable/bg_gradient_orange_white"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/commands_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@mipmap/ic_launcher_foreground"
+            android:contentDescription="Commands Icon"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sara Settings"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/orange"
+            android:layout_marginTop="10dp"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView> 

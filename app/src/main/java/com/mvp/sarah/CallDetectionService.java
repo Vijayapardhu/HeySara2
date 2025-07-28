@@ -125,10 +125,13 @@ public class CallDetectionService extends Service {
                     null, null, null);
 
             if (cursor != null && cursor.moveToFirst()) {
-                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-                cursor.close();
-                Log.d(TAG, "Found contact name: " + name);
-                return name;
+                int columnIndex = cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
+                if (columnIndex >= 0) {
+                    String name = cursor.getString(columnIndex);
+                    cursor.close();
+                    Log.d(TAG, "Found contact name: " + name);
+                    return name;
+                }
             }
             
             if (cursor != null) {

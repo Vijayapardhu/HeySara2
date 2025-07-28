@@ -91,9 +91,14 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
     private String pendingUnlockAppName = null;
     private String pendingUnlockAction = null;
 
+    private static boolean running = false;
+    public static boolean isRunning() {
+        return running;
+    }
     @Override
     public void onCreate() {
         super.onCreate();
+        running = true;
         Log.d("SaraVoiceService", "onCreate called");
         handler = new Handler(Looper.getMainLooper());
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -178,6 +183,91 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         showBubbleOverlayAndListen();
     }
 
+    private void greetUserAndStartListening() {
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK, "sara:WakeLock");
+        wakeLock.acquire(3000);
+        
+        // Greet the user first
+        String greeting = getRandomGreeting();
+        FeedbackProvider.speakAndToast(this, greeting);
+        
+        // Wait for the greeting to finish, then show overlay and start listening
+        handler.postDelayed(() -> {
+            showBubbleOverlayAndListen();
+        }, 2500); // Wait 2.5 seconds for greeting to complete
+    }
+
+    private String getRandomGreeting() {
+        // Get time-based greeting
+        String timeBasedGreeting = getTimeBasedGreeting();
+        String userName = getUserName();
+        
+        // Add some variety to the responses
+        String[] responses = {
+            "I'm here to help you. What can I do for you today?",
+            "I'm listening. How can I assist you?",
+            "I'm ready to help. What do you need?",
+            "I'm Sara, your personal assistant. How may I help you?",
+            "I'm here and ready to assist. What would you like me to do?",
+            "I'm listening. What can I help you with today?",
+            "I'm ready to help. What do you need assistance with?",
+            "I'm Sara, your voice assistant. How can I be of service?"
+        };
+        
+        // Get last used greeting to avoid repetition
+        SharedPreferences prefs = getSharedPreferences("SaraSettingsPrefs", Context.MODE_PRIVATE);
+        int lastGreetingIndex = prefs.getInt("last_greeting_index", -1);
+        
+        int randomIndex;
+        do {
+            randomIndex = (int) (Math.random() * responses.length);
+        } while (randomIndex == lastGreetingIndex && responses.length > 1);
+        
+        // Save the current greeting index
+        prefs.edit().putInt("last_greeting_index", randomIndex).apply();
+        
+        String response = responses[randomIndex];
+        
+        // Create personalized greeting
+        if (!userName.isEmpty()) {
+            return timeBasedGreeting + " " + userName + "! " + response;
+        } else {
+            return timeBasedGreeting + "! " + response;
+        }
+    }
+
+    private String getTimeBasedGreeting() {
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        int hour = calendar.get(java.util.Calendar.HOUR_OF_DAY);
+        
+        if (hour >= 5 && hour < 12) {
+            return "Good morning";
+        } else if (hour >= 12 && hour < 17) {
+            return "Good afternoon";
+        } else if (hour >= 17 && hour < 21) {
+            return "Good evening";
+        } else {
+            return "Hello";
+        }
+    }
+
+    private String getUserName() {
+        try {
+            // Try to get user name from system
+            String userName = android.os.Build.USER;
+            if (userName != null && !userName.isEmpty() && !userName.equals("unknown")) {
+                return userName;
+            }
+        } catch (Exception e) {
+            Log.d("SaraVoiceService", "Could not get user name: " + e.getMessage());
+        }
+        
+        // Fallback to a generic greeting
+        return "";
+    }
+
     private void showBubbleOverlayAndListen() {
         if (!Settings.canDrawOverlays(this)) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
@@ -191,24 +281,49 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         bubbleOverlayView = inflater.inflate(R.layout.assistant_bubble, null);
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT, // was WRAP_CONTENT
-                WindowManager.LayoutParams.MATCH_PARENT, // was WRAP_CONTENT
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
+                        WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON, // <--- Added for lockscreen
                 PixelFormat.TRANSLUCENT
         );
-        params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-        params.y = 100;
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+        params.x = 0;
+        params.y = 0;
+        
+        // Ensure full screen coverage including system bars
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
 
         // UI references
         // Remove earlier declarations of bubbleContainer, glowEffect, dimBackground
         // Only declare them as final after addView
         bubbleOverlayView = inflater.inflate(R.layout.assistant_bubble, null);
+        
+        // Ensure the overlay view has proper system UI flags for full screen coverage
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            bubbleOverlayView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
+        }
+        
         // Set root overlay alpha to 0 before adding
         bubbleOverlayView.setAlpha(0f);
         bubbleWindowManager.addView(bubbleOverlayView, params);
@@ -219,9 +334,18 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         final View dimBackground = bubbleOverlayView.findViewById(R.id.dim_background);
         com.mvp.sarah.VoiceBarsView voiceLines = bubbleOverlayView.findViewById(R.id.voice_lines);
 
-        // Apply blur to dim background if supported
-        if (dimBackground != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dimBackground.setRenderEffect(RenderEffect.createBlurEffect(24f, 24f, Shader.TileMode.CLAMP));
+        // Apply subtle blur to dim background if supported
+        if (dimBackground != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Use RenderEffect for Android 12+ with subtle blur
+                dimBackground.setRenderEffect(RenderEffect.createBlurEffect(8f, 8f, Shader.TileMode.CLAMP));
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                // Fallback for older versions - use hardware acceleration and alpha
+                dimBackground.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+            
+            // Add subtle animation to the blur effect
+            dimBackground.setAlpha(0.85f); // Slightly more transparent for subtle effect
         }
 
         // Start entry animation after view is attached
@@ -455,6 +579,7 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
     @Override
     public void onDestroy() {
         super.onDestroy();
+        running = false;
         isShuttingDown = true;
         
         // Abandon audio focus
@@ -951,9 +1076,9 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
             } catch (PorcupineException e) {
                 Log.e("Porcupine", "Failed to stop porcupine: " + e.getMessage());
             }
-            // Wake word detected, now show overlay to listen for command
+            // Wake word detected, now greet the user and show overlay
             sendBroadcast(new Intent("com.mvp.sarah.ACTION_PLAY_BEEP"));
-            wakeScreenAndNotify();
+            greetUserAndStartListening();
         }
     };
 }

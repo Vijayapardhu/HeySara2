@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 public class QuickSettingsHandler implements CommandHandler, CommandRegistry.SuggestionProvider {
     
@@ -123,7 +125,39 @@ public class QuickSettingsHandler implements CommandHandler, CommandRegistry.Sug
                 e.printStackTrace();
             }
         }
+        
+        // Try to find a better match from available tiles
+        Set<String> availableTiles = prefs.getStringSet("available_tiles", new HashSet<>());
+        if (!availableTiles.isEmpty()) {
+            String bestMatch = findBestTileMatch(logicalCommand, availableTiles);
+            if (bestMatch != null) {
+                // Update the mapping for future use
+                setTileLabelMapping(context, logicalCommand, bestMatch);
+                return bestMatch;
+            }
+        }
+        
         return defaultLabel;
+    }
+
+    private String findBestTileMatch(String logicalCommand, Set<String> availableTiles) {
+        String commandLower = logicalCommand.toLowerCase();
+        
+        // First try exact match
+        for (String tile : availableTiles) {
+            if (tile.contains(commandLower) || commandLower.contains(tile)) {
+                return tile;
+            }
+        }
+        
+        // Try partial matches
+        for (String tile : availableTiles) {
+            if (tile.contains(commandLower.substring(0, Math.min(3, commandLower.length())))) {
+                return tile;
+            }
+        }
+        
+        return null;
     }
 
     // Set the mapping for a logical command to a tile label

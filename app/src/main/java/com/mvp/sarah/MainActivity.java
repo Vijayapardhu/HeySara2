@@ -170,16 +170,46 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Initialize button
+        // Initialize buttons and views
         btnEnableAccessibility = findViewById(R.id.btn_enable_accessibility);
-        findViewById(R.id.btn_call_sara).setVisibility(View.GONE); // Hide the old button
+        Button btnCallSara = findViewById(R.id.btn_call_sara);
+        Button btnSettings = findViewById(R.id.btn_settings);
+        Button btnHelp = findViewById(R.id.btn_help);
+        Button btnAbout = findViewById(R.id.btn_about);
+        View statusIndicator = findViewById(R.id.status_indicator);
+        android.widget.TextView statusText = findViewById(R.id.status_text);
 
         // Register all command handlers
         CommandRegistry.init(this);
 
+        // Main activation button
         btnEnableAccessibility.setOnClickListener(v -> {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
+        });
+
+        // Call Sara button
+        btnCallSara.setOnClickListener(v -> {
+            Intent serviceIntent = new Intent(this, SaraVoiceService.class);
+            serviceIntent.setAction("com.mvp.sarah.ACTION_START_COMMAND_LISTENING");
+            androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent);
+            Toast.makeText(this, "Calling Sara...", Toast.LENGTH_SHORT).show();
+        });
+
+        // Settings button
+        btnSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SaraSettingsActivity.class);
+            startActivity(intent);
+        });
+
+        // Help button
+        btnHelp.setOnClickListener(v -> {
+            showHelpDialog();
+        });
+
+        // About button
+        btnAbout.setOnClickListener(v -> {
+            showAboutDialog();
         });
 
         // File sharing setup
@@ -268,12 +298,7 @@ public class MainActivity extends AppCompatActivity {
             "update_check",
             androidx.work.ExistingPeriodicWorkPolicy.KEEP,
             updateWork);
-
-        // Check if started from shake detection notification
-        if (getIntent() != null && getIntent().getFlags() != 0) {
-            // ShakeDetectionService is already started above, just show confirmation
-            Toast.makeText(this, "Shake detection activated!", Toast.LENGTH_SHORT).show();
-        }
+        
     }
 
     private void scanAndStoreAllApps(Context context) {
@@ -377,9 +402,43 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (isInitialized && btnEnableAccessibility != null) {
-            btnEnableAccessibility.setVisibility(View.GONE);
+        
+        // Update status indicator and text
+        View statusIndicator = findViewById(R.id.status_indicator);
+        android.widget.TextView statusText = findViewById(R.id.status_text);
+        Button btnCallSara = findViewById(R.id.btn_call_sara);
+        
+        if (isAccessibilityServiceEnabled()) {
+            // Service is enabled
+            if (statusIndicator != null) {
+                statusIndicator.setBackgroundResource(R.drawable.status_indicator_online);
+            }
+            if (statusText != null) {
+                statusText.setText("Sara is active and listening");
+            }
+            if (btnCallSara != null) {
+                btnCallSara.setVisibility(View.VISIBLE);
+            }
+            if (isInitialized && btnEnableAccessibility != null) {
+                btnEnableAccessibility.setVisibility(View.GONE);
+            }
+            startAssistantService();
+        } else {
+            // Service is not enabled
+            if (statusIndicator != null) {
+                statusIndicator.setBackgroundResource(R.drawable.status_indicator_offline);
+            }
+            if (statusText != null) {
+                statusText.setText("Sara needs to be activated");
+            }
+            if (btnCallSara != null) {
+                btnCallSara.setVisibility(View.GONE);
+            }
+            if (btnEnableAccessibility != null) {
+                btnEnableAccessibility.setVisibility(View.VISIBLE);
+            }
         }
+        
         handleShareFileIntent(getIntent());
         boolean isShareFileIntent = getIntent().getBooleanExtra("share_file", false);
         if (!isShareFileIntent && !isFileSharingFlow) {
@@ -569,6 +628,45 @@ public class MainActivity extends AppCompatActivity {
             isFileSharingFlow = true;
             fileShareHelper.pickFiles(this, filePickerLauncher);
         }
+    }
+
+    private void showHelpDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("💡 How to Use Sara")
+            .setMessage("🎤 Wake Word: Say 'Hey Sara' to activate\n\n" +
+                       "📞 Voice Commands:\n" +
+                       "• 'Call [contact name]' - Make a call\n" +
+                       "• 'Send message to [contact]' - Send SMS\n" +
+                       "• 'Open [app name]' - Launch apps\n" +
+                       "• 'Lock [app name]' - Secure apps\n" +
+                       "• 'What's the weather?' - Get weather info\n" +
+                       "• 'Play music' - Control music\n" +
+                       "• 'Take a screenshot' - Capture screen\n\n" +
+                       "🔒 Security: Sara can lock/unlock apps with voice\n" +
+                       "📱 Accessibility: Works with screen off\n" +
+                       "🌐 Internet: Requires connection for some features")
+            .setPositiveButton("Got it!", null)
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show();
+    }
+
+    private void showAboutDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("ℹ️ About Hey Sara")
+            .setMessage("Hey Sara - Your Personal Voice Assistant\n\n" +
+                       "Version: 1.0\n" +
+                       "Developer: Sara Team\n\n" +
+                       "Features:\n" +
+                       "• Voice-controlled assistant\n" +
+                       "• App security & locking\n" +
+                       "• Call & message management\n" +
+                       "• Music & media control\n" +
+                       "• System settings control\n" +
+                       "• Emergency features\n\n" +
+                       "Made with ❤️ for accessibility")
+            .setPositiveButton("Close", null)
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show();
     }
 
     @Override

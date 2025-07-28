@@ -997,8 +997,12 @@ public class EnhancedAccessibilityService extends AccessibilityService {
                 );
                 
                 if (cursor != null && cursor.moveToFirst()) {
-                    String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                    String displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    int contactIdIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+                    int displayNameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
+                    
+                    if (contactIdIndex >= 0 && displayNameIndex >= 0) {
+                        String contactId = cursor.getString(contactIdIndex);
+                        String displayName = cursor.getString(displayNameIndex);
                     
                     // Get phone number for this contact
                     Cursor phoneCursor = getContentResolver().query(
@@ -1010,28 +1014,35 @@ public class EnhancedAccessibilityService extends AccessibilityService {
                     );
                     
                     if (phoneCursor != null && phoneCursor.moveToFirst()) {
-                        String phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        phoneCursor.close();
-                        
-                        // Dial the number
-                        Intent intent = new Intent(Intent.ACTION_CALL);
-                        intent.setData(Uri.parse("tel:" + phoneNumber));
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        
-                        FeedbackProvider.speakAndToast(this, "Calling " + displayName);
+                        int phoneNumberIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                        if (phoneNumberIndex >= 0) {
+                            String phoneNumber = phoneCursor.getString(phoneNumberIndex);
+                            phoneCursor.close();
+                            
+                            // Dial the number
+                            Intent intent = new Intent(Intent.ACTION_CALL);
+                            intent.setData(Uri.parse("tel:" + phoneNumber));
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            
+                            FeedbackProvider.speakAndToast(this, "Calling " + displayName);
+                        } else {
+                            phoneCursor.close();
+                            FeedbackProvider.speakAndToast(this, "No phone number found for " + displayName);
+                        }
                     } else {
                         FeedbackProvider.speakAndToast(this, "No phone number found for " + displayName);
                     }
                     cursor.close();
-                } else {
-                    // Contact not found, open dialer with search
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    intent.setData(Uri.parse("tel:" + contactName));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    FeedbackProvider.speakAndToast(this, "Contact not found, opening dialer");
                 }
+            } else {
+                // Contact not found, open dialer with search
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:" + contactName));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                FeedbackProvider.speakAndToast(this, "Contact not found, opening dialer");
+            }
             } else {
                 // Open dialer
                 Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -1073,21 +1084,27 @@ public class EnhancedAccessibilityService extends AccessibilityService {
                     );
                     
                     if (cursor != null && cursor.moveToFirst()) {
-                        String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                        cursor.close();
-                        
-                        // Get phone number
-                        Cursor phoneCursor = getContentResolver().query(
-                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            new String[] { ContactsContract.CommonDataKinds.Phone.NUMBER },
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                            new String[] { contactId },
-                            null
-                        );
-                        
-                        if (phoneCursor != null && phoneCursor.moveToFirst()) {
-                            phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            phoneCursor.close();
+                        int contactIdIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+                        if (contactIdIndex >= 0) {
+                            String contactId = cursor.getString(contactIdIndex);
+                            cursor.close();
+                            
+                            // Get phone number
+                            Cursor phoneCursor = getContentResolver().query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                new String[] { ContactsContract.CommonDataKinds.Phone.NUMBER },
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                new String[] { contactId },
+                                null
+                            );
+                            
+                            if (phoneCursor != null && phoneCursor.moveToFirst()) {
+                                int phoneNumberIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                                if (phoneNumberIndex >= 0) {
+                                    phoneNumber = phoneCursor.getString(phoneNumberIndex);
+                                }
+                                phoneCursor.close();
+                            }
                         }
                     }
                 } else {
