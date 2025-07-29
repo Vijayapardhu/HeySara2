@@ -187,6 +187,15 @@ public class SaraSettingsActivity extends AppCompatActivity {
             startActivity(intent);
             Toast.makeText(SaraSettingsActivity.this, "Opening Manage Commands...", Toast.LENGTH_SHORT).show();
         });
+
+        EditText editPcIp = findViewById(R.id.edit_pc_ip);
+        Button btnSaveIp = findViewById(R.id.btn_save_pc_ip);
+        editPcIp.setText(prefs.getString("pc_ip", ""));
+        btnSaveIp.setOnClickListener(v -> {
+            String ip = editPcIp.getText().toString().trim();
+            prefs.edit().putString("pc_ip", ip).apply();
+            Toast.makeText(this, "PC IP saved!", Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override

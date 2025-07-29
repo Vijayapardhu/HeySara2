@@ -2003,10 +2003,10 @@ public class ClickAccessibilityService extends AccessibilityService {
             return;
         }
 
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root != null) {
-            boolean clicked = clickQuickSettingsTileByLabel(root, tileKeyword);
-            root.recycle();
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                boolean clicked = clickQuickSettingsTileByLabel(root, tileKeyword);
+                root.recycle();
             if (clicked) {
                 dismissQuickSettings();
                 return;
@@ -2017,12 +2017,12 @@ public class ClickAccessibilityService extends AccessibilityService {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             attemptQuickSettingsClick(tileKeyword, attempt + 1);
         }, 300);
-    }
+                }
 
     private void dismissQuickSettings() {
-        if (android.os.Build.VERSION.SDK_INT >= 28) {
-            performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-        }
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
     }
 
     public void triggerQuickSettingsTileWithState(final String tileKeyword, final boolean shouldTurnOn) {
@@ -2043,14 +2043,14 @@ public class ClickAccessibilityService extends AccessibilityService {
             return;
         }
 
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root != null) {
-            boolean clicked = clickQuickSettingsTileByLabelAndState(root, tileKeyword, shouldTurnOn);
-            root.recycle();
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                boolean clicked = clickQuickSettingsTileByLabelAndState(root, tileKeyword, shouldTurnOn);
+                root.recycle();
             if (clicked) {
                 dismissQuickSettings();
                 return;
-            }
+                }
         }
 
         // Retry after a short delay

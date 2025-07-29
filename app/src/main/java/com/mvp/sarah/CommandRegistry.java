@@ -12,8 +12,10 @@ import com.mvp.sarah.handlers.PlayMusicHandler;
 import com.mvp.sarah.handlers.BluetoothHandler;
 import com.mvp.sarah.handlers.WikipediaHandler;
 import com.mvp.sarah.handlers.EmergencyHandler;
+import com.mvp.sarah.handlers.OpenAppHandler;
 import com.mvp.sarah.AppLockActivity;
 import com.mvp.sarah.handlers.SetupEmergencyHandler;
+import com.mvp.sarah.handlers.PcControlHandler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,6 +150,7 @@ public class CommandRegistry {
             register(new com.mvp.sarah.handlers.BrightnessHandler());
             register(new com.mvp.sarah.handlers.CalculatorHandler());
             register(new com.mvp.sarah.handlers.CalendarHandler());
+            register(new com.mvp.sarah.handlers.PcControlHandler());
             register(new com.mvp.sarah.handlers.CallAnswerHandler());
             register(new com.mvp.sarah.handlers.CallContactHandler());
             register(new com.mvp.sarah.handlers.CameraTranslateHandler());

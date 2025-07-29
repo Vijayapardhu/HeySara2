@@ -95,16 +95,12 @@ public class WriteHandler implements CommandHandler, CommandRegistry.SuggestionP
         switch (contentType) {
             case "code":
                 return "If no specific programming language is mentioned, use Python. " +
-                        "dont Include brief comments explaining what the code does.";
+                        "don't Include brief comments explaining what the code does.";
 
             case "email":
                 return "Write a professional email. Keep it polite, clear, and concise. " +
                         "Include a subject line, greeting, main content, and closing. " +
                         "Make it appropriate for a business context.";
-
-            case "message":
-                return "Write a friendly message. Keep it casual and conversational. " +
-                        "Make it suitable for texting or instant messaging.";
 
             case "response":
             case "reply":

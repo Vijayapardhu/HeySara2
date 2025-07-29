@@ -128,9 +128,9 @@ public class CallDetectionService extends Service {
                 int columnIndex = cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
                 if (columnIndex >= 0) {
                     String name = cursor.getString(columnIndex);
-                    cursor.close();
-                    Log.d(TAG, "Found contact name: " + name);
-                    return name;
+                cursor.close();
+                Log.d(TAG, "Found contact name: " + name);
+                return name;
                 }
             }
             

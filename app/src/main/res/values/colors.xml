@@ -21,4 +21,5 @@
     <color name="alarm_button_dismiss">#FF3B30</color>
     <color name="alarm_button_snooze">#34C759</color>
     <color name="orange">#FF9900</color>
+    <color name="gray">#888888</color>
 </resources>

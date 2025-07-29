@@ -43,9 +43,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.List;
 
 import com.mvp.sarah.handlers.SearchHandler;
 import android.content.SharedPreferences;
@@ -183,23 +180,45 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
         showBubbleOverlayAndListen();
     }
 
+    private boolean shouldGreetToday() {
+        SharedPreferences prefs = getSharedPreferences("SaraSettingsPrefs", MODE_PRIVATE);
+        String lastGreetDate = prefs.getString("last_greet_date", "");
+        String today = new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+        if (!today.equals(lastGreetDate)) {
+            prefs.edit().putString("last_greet_date", today).apply();
+            return true;
+        }
+        return false;
+    }
+
     private void greetUserAndStartListening() {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         PowerManager.WakeLock wakeLock = powerManager.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK, "sara:WakeLock");
         wakeLock.acquire(3000);
-        
-        // Greet the user first
-        String greeting = getRandomGreeting();
+
+        showBubbleOverlayAndListen(); // Show bubble immediately
+
+        String greeting;
+        if (shouldGreetToday()) {
+            greeting = getRandomGreeting(this); // e.g., "Good morning sir/mam! ..."
+        } else {
+            greeting = "Hello, I'm Sara. How can I help you?";
+        }
+
         FeedbackProvider.speakAndToast(this, greeting);
-        
-        // Wait for the greeting to finish, then show overlay and start listening
+
         handler.postDelayed(() -> {
-            showBubbleOverlayAndListen();
-        }, 2500); // Wait 2.5 seconds for greeting to complete
+            // Start speech recognition after greeting
+            // You may need to pass the correct arguments here
+            // For example: startBubbleListening(...);
+            // If you have a method to just start listening, call it here
+            // If not, call showBubbleOverlayAndListen() or similar
+            startBubbleListeningAfterGreeting();
+        }, 2500); // Adjust delay as needed
     }
 
-    private String getRandomGreeting() {
+    private String getRandomGreeting(SaraVoiceService saraVoiceService) {
         // Get time-based greeting
         String timeBasedGreeting = getTimeBasedGreeting();
         String userName = getUserName();
@@ -441,6 +460,15 @@ public class SaraVoiceService extends Service implements AudioManager.OnAudioFoc
             public void onEvent(int eventType, Bundle params) {}
         });
         bubbleRecognizer.startListening(intent);
+    }
+
+    private void startBubbleListeningAfterGreeting() {
+        if (bubbleOverlayView != null) {
+            View bubbleContainer = bubbleOverlayView.findViewById(R.id.bubble_container);
+            View glowEffect = bubbleOverlayView.findViewById(R.id.glow_effect);
+            VoiceBarsView voiceLines = bubbleOverlayView.findViewById(R.id.voice_lines);
+            startBubbleListening(bubbleContainer, glowEffect, voiceLines);
+        }
     }
 
     @Override

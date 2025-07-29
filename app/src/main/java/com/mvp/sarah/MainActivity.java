@@ -17,6 +17,7 @@ import android.view.KeyEvent;
 import android.content.pm.ApplicationInfo;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -47,6 +48,8 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
         if (Intent.ACTION_ASSIST.equals(getIntent().getAction())) {
             Intent serviceIntent = new Intent(this, SaraVoiceService.class);
             serviceIntent.setAction("com.mvp.sarah.ACTION_START_COMMAND_LISTENING");
-            androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent);
+            ContextCompat.startForegroundService(this, serviceIntent);
             finish();
             return;
         }
@@ -136,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
-        android.util.Log.d("MainActivity", "MainActivity onCreate called");
+        Log.d("MainActivity", "MainActivity onCreate called");
 
         // Onboarding: Show Picovoice onboarding if not set
         SharedPreferences saraPrefs = getSharedPreferences("SaraSettingsPrefs", Context.MODE_PRIVATE);
@@ -154,18 +157,18 @@ public class MainActivity extends AppCompatActivity {
 
         // Check and request overlay permission
         if (!Settings.canDrawOverlays(this)) {
-            android.widget.Toast.makeText(this, "Please grant overlay permission for Sara to work over other apps", android.widget.Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Please grant overlay permission for Sara to work over other apps", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-            intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+            intent.setData(Uri.parse("package:" + getPackageName()));
             startActivity(intent);
         }
 
         // Check and request write settings permission for brightness control
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.System.canWrite(this)) {
-                android.widget.Toast.makeText(this, "Please grant write settings permission for Sara to control brightness", android.widget.Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Please grant write settings permission for Sara to control brightness", Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                intent.setData(Uri.parse("package:" + getPackageName()));
                 startActivity(intent);
             }
         }
@@ -177,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnHelp = findViewById(R.id.btn_help);
         Button btnAbout = findViewById(R.id.btn_about);
         View statusIndicator = findViewById(R.id.status_indicator);
-        android.widget.TextView statusText = findViewById(R.id.status_text);
+        TextView statusText = findViewById(R.id.status_text);
 
         // Register all command handlers
         CommandRegistry.init(this);
@@ -192,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         btnCallSara.setOnClickListener(v -> {
             Intent serviceIntent = new Intent(this, SaraVoiceService.class);
             serviceIntent.setAction("com.mvp.sarah.ACTION_START_COMMAND_LISTENING");
-            androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent);
+            ContextCompat.startForegroundService(this, serviceIntent);
             Toast.makeText(this, "Calling Sara...", Toast.LENGTH_SHORT).show();
         });
 
@@ -217,21 +220,26 @@ public class MainActivity extends AppCompatActivity {
         filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
+                Log.d("FileShare", "File picker result received");
+                Toast.makeText(this, "File picker result received", Toast.LENGTH_SHORT).show();
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    isFileSharingFlow = true; // Stay in file sharing mode
+                    isFileSharingFlow = true;
                     fileShareHelper.handleFilePickerResult(this, result.getData());
                     ArrayList<Uri> uris = fileShareHelper.getFileUris();
                     ArrayList<String> names = fileShareHelper.getFileNames();
+                    Log.d("FileShare", "URIs: " + uris + ", Names: " + names);
                     if (uris != null && names != null && uris.size() == names.size() && !uris.isEmpty()) {
                         Intent intent = new Intent(this, FileShareActivity.class);
                         ArrayList<String> uriStrings = new ArrayList<>();
                         for (Uri uri : uris) uriStrings.add(uri.toString());
                         intent.putStringArrayListExtra("uris", uriStrings);
                         intent.putStringArrayListExtra("names", names);
+                        Log.d("FileShare", "Starting FileShareActivity");
+                        Toast.makeText(this, "Starting FileShareActivity", Toast.LENGTH_SHORT).show();
                         startActivity(intent);
                     }
                 } else {
-                    isFileSharingFlow = false; // Reset if cancelled
+                    isFileSharingFlow = false;
                 }
             }
         );
@@ -269,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                     mShakeTimestamp = now;
-                    android.widget.Toast.makeText(MainActivity.this, "Shake detected! Activating Sara...", android.widget.Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Shake detected! Activating Sara...", Toast.LENGTH_SHORT).show();
                     startAssistantService();
                 }
             }
@@ -296,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
             .build();
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "update_check",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.KEEP,
             updateWork);
         
     }

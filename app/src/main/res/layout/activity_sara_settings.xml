@@ -183,6 +183,20 @@
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.MaterialComponents.Button"/>
 
+            <EditText
+                android:id="@+id/edit_pc_ip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="PC IP Address (e.g. 192.168.1.100)"
+                android:inputType="textUri"
+                android:layout_marginTop="24dp" />
+            <Button
+                android:id="@+id/btn_save_pc_ip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Save IP"
+                android:layout_marginTop="8dp" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_done_settings"
                 android:layout_width="match_parent"
