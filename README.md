@@ -9,7 +9,7 @@
 
 ### 2. Clone the Repository
 ```sh
-git clone <your-repo-url>
+git clone https://github.com/Vijayapardhu/HeySara.git
 cd HeySara
 ```
 
